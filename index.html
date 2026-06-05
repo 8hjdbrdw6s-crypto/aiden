@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AIDEN">
+<meta name="theme-color" content="#0a0a0b">
+<link rel="manifest" href="manifest.json">
+<title>AIDEN — Assistant Exécutif</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --surface: #111113;
+    --surface2: #18181c;
+    --border: #1e1e24;
+    --border2: #2a2a33;
+    --text: #e8e8ec;
+    --muted: #6b6b7a;
+    --accent: #c8b8ff;
+    --accent2: #7c6adb;
+    --accent3: #4a3fa0;
+    --green: #6ee7b7;
+    --red: #f87171;
+    --yellow: #fbbf24;
+    --blue: #60a5fa;
+    --glow: rgba(124, 106, 219, 0.15);
+    --safe-top: env(safe-area-inset-top);
+    --safe-bottom: env(safe-area-inset-bottom);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    height: -webkit-fill-available;
+    overscroll-behavior: none;
+  }
+
+  body {
+    font-family: 'Geist', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+  }
+
+  /* ── MOBILE HEADER ── */
+  .mobile-header {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .mobile-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .logo-mark {
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent3));
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Instrument Serif', serif;
+    font-size: 14px;
+    color: white;
+    box-shadow: 0 0 16px var(--glow);
+  }
+
+  .logo-text {
+    font-family: 'Instrument Serif', serif;
+    font-size: 18px;
+    color: var(--text);
+  }
+
+  .mobile-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    color: var(--green);
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  .menu-btn {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+  }
+
+  /* ── LAYOUT ── */
+  .app-shell {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 260px;
+    min-width: 260px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+    z-index: 100;
+  }
+
+  .sidebar-header {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  .desktop-logo-mark {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent3));
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Instrument Serif', serif;
+    font-size: 16px;
+    color: white;
+    box-shadow: 0 0 20px var(--glow);
+  }
+
+  .logo-label { font-family: 'Instrument Serif', serif; font-size: 20px; }
+  .logo-sub {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-left: 42px;
+  }
+
+  .sidebar-status {
+    padding: 8px 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(110,231,183,0.04);
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--green);
+  }
+
+  .sync-badge {
+    margin-left: auto;
+    font-size: 9px;
+    padding: 1px 6px;
+    background: rgba(96,165,250,0.1);
+    border: 1px solid rgba(96,165,250,0.2);
+    border-radius: 3px;
+    color: var(--blue);
+  }
+
+  .section-label {
+    padding: 14px 20px 6px;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    letter-spacing: .15em;
+    text-transform: uppercase;
+  }
+
+  .memory-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 12px;
+  }
+
+  .memory-list::-webkit-scrollbar { width: 3px; }
+  .memory-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .memory-item {
+    padding: 8px 10px;
+    border-radius: 6px;
+    margin-bottom: 2px;
+    cursor: pointer;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    transition: background .15s;
+  }
+
+  .memory-item:hover, .memory-item:active { background: var(--surface2); }
+
+  .memory-icon { font-size: 12px; margin-top: 1px; flex-shrink: 0; }
+
+  .memory-content { font-size: 12px; color: var(--text); line-height: 1.4; font-weight: 300; }
+
+  .memory-tag {
+    display: inline-block;
+    font-size: 9px;
+    font-family: 'DM Mono', monospace;
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-top: 3px;
+    letter-spacing: .05em;
+  }
+
+  .tag-pref { background: rgba(200,184,255,.1); color: var(--accent); }
+  .tag-proj { background: rgba(96,165,250,.1); color: var(--blue); }
+  .tag-habit { background: rgba(110,231,183,.1); color: var(--green); }
+
+  .add-memory-btn {
+    margin: 6px 12px;
+    padding: 7px 10px;
+    background: transparent;
+    border: 1px dashed var(--border2);
+    border-radius: 6px;
+    color: var(--muted);
+    font-size: 11px;
+    font-family: 'Geist', sans-serif;
+    cursor: pointer;
+    transition: all .15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: calc(100% - 24px);
+  }
+
+  .add-memory-btn:hover { border-color: var(--accent2); color: var(--accent); background: rgba(124,106,219,.05); }
+
+  .sidebar-footer {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .tools-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+  }
+
+  .tool-pill {
+    padding: 5px 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .tool-pill.active { border-color: var(--accent3); color: var(--accent); background: rgba(124,106,219,.08); }
+
+  .tool-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--border2); flex-shrink: 0; }
+  .tool-pill.active .tool-dot { background: var(--accent); box-shadow: 0 0 6px var(--accent2); }
+
+  /* ── MAIN ── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  .pipeline-bar {
+    padding: 10px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    flex-shrink: 0;
+  }
+
+  .pipeline-bar::-webkit-scrollbar { display: none; }
+
+  .pipe-node {
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: .08em;
+    color: var(--muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    white-space: nowrap;
+    transition: all .3s;
+  }
+
+  .pipe-node.active {
+    color: var(--accent);
+    background: rgba(124,106,219,.1);
+    border-color: var(--accent3);
+    box-shadow: 0 0 10px rgba(124,106,219,.2);
+  }
+
+  .pipe-node.done {
+    color: var(--green);
+    background: rgba(110,231,183,.06);
+    border-color: rgba(110,231,183,.2);
+  }
+
+  .pipe-arrow { width: 20px; text-align: center; color: var(--border2); font-size: 9px; flex-shrink: 0; }
+
+  /* ── CHAT ── */
+  .chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .chat-area::-webkit-scrollbar { width: 3px; }
+  .chat-area::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* Welcome */
+  .welcome {
+    text-align: center;
+    padding: 40px 16px;
+    animation: fadeIn .6s ease;
+  }
+
+  @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+  .welcome-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: 36px;
+    font-style: italic;
+    margin-bottom: 6px;
+  }
+
+  .welcome-sub { font-size: 13px; color: var(--muted); font-weight: 300; margin-bottom: 36px; }
+
+  .quick-actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .quick-btn {
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    text-align: left;
+    cursor: pointer;
+    transition: all .2s;
+    color: var(--text);
+    font-family: 'Geist', sans-serif;
+  }
+
+  .quick-btn:hover, .quick-btn:active {
+    background: var(--surface2);
+    border-color: var(--border2);
+    transform: translateY(-1px);
+  }
+
+  .quick-btn-icon { font-size: 16px; margin-bottom: 6px; }
+  .quick-btn-text { font-size: 12px; font-weight: 400; line-height: 1.3; }
+  .quick-btn-sub { font-size: 10px; color: var(--muted); margin-top: 2px; font-family: 'DM Mono', monospace; }
+
+  /* Messages */
+  .msg {
+    display: flex;
+    gap: 12px;
+    animation: slideIn .3s ease;
+    max-width: 100%;
+  }
+
+  @keyframes slideIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+  .msg.user { flex-direction: row-reverse; margin-left: auto; max-width: 85%; }
+
+  .msg-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+    font-family: 'Instrument Serif', serif;
+  }
+
+  .msg.user .msg-avatar { background: var(--surface2); border: 1px solid var(--border2); color: var(--muted); }
+  .msg.assistant .msg-avatar { background: linear-gradient(135deg, var(--accent2), var(--accent3)); color: white; box-shadow: 0 0 14px var(--glow); }
+
+  .msg-body { max-width: calc(100% - 40px); }
+  .msg.user .msg-body { align-items: flex-end; display: flex; flex-direction: column; }
+
+  .msg-meta { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--muted); margin-bottom: 4px; }
+
+  .msg-bubble {
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.65;
+    font-weight: 300;
+  }
+
+  .msg.user .msg-bubble {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 12px 4px 12px 12px;
+  }
+
+  .msg.assistant .msg-bubble {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px 12px 12px 12px;
+  }
+
+  /* Structured */
+  .structured-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .block-section { border-bottom: 1px solid var(--border); padding: 12px 16px; }
+  .block-section:last-child { border-bottom: none; }
+
+  .block-label {
+    font-size: 9px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+
+  .block-label.objective { color: var(--accent); }
+  .block-label.plan { color: var(--blue); }
+  .block-label.execution { color: var(--yellow); }
+  .block-label.result { color: var(--green); }
+  .block-label.next { color: var(--muted); }
+
+  .block-content { font-size: 13px; line-height: 1.6; font-weight: 300; }
+
+  .plan-items { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+
+  .plan-item { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; font-weight: 300; }
+
+  .plan-num { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); padding-top: 2px; min-width: 18px; }
+
+  .next-items { display: flex; flex-direction: column; gap: 5px; }
+
+  .next-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace;
+  }
+
+  .next-item::before { content: '→'; color: var(--accent2); }
+
+  /* Thinking */
+  .thinking { display: flex; gap: 12px; animation: fadeIn .3s ease; }
+
+  .thinking-avatar {
+    width: 28px; height: 28px; border-radius: 7px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent3));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Instrument Serif', serif; font-size: 12px; color: white;
+    box-shadow: 0 0 14px var(--glow); flex-shrink: 0;
+  }
+
+  .thinking-content {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px 12px 12px 12px; padding: 12px 16px;
+  }
+
+  .thinking-steps { display: flex; flex-direction: column; gap: 6px; }
+
+  .thinking-step {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; font-family: 'DM Mono', monospace; color: var(--muted); transition: all .3s;
+  }
+
+  .thinking-step.active { color: var(--accent); }
+  .thinking-step.done { color: var(--green); }
+
+  .step-icon {
+    width: 13px; height: 13px; border-radius: 50%; background: var(--border2);
+    display: flex; align-items: center; justify-content: center; font-size: 7px; flex-shrink: 0;
+  }
+
+  .thinking-step.active .step-icon { background: var(--accent2); animation: spin 1s linear infinite; }
+  .thinking-step.done .step-icon { background: var(--green); }
+
+  @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+  /* Memory prompt */
+  .memory-prompt {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 10px 14px;
+    background: rgba(200,184,255,.05); border: 1px solid rgba(200,184,255,.15);
+    border-radius: 8px; font-size: 12px; color: var(--accent); font-family: 'DM Mono', monospace;
+  }
+
+  .memory-prompt-btns { display: flex; gap: 6px; margin-left: auto; }
+
+  .mp-btn {
+    padding: 3px 10px; border-radius: 4px; font-size: 10px;
+    font-family: 'DM Mono', monospace; cursor: pointer; border: none; transition: all .15s;
+  }
+
+  .mp-btn.yes { background: rgba(200,184,255,.2); color: var(--accent); }
+  .mp-btn.yes:hover { background: rgba(200,184,255,.35); }
+  .mp-btn.no { background: transparent; color: var(--muted); }
+
+  /* Setup */
+  .setup-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 24px; max-width: 480px; margin: 0 auto;
+    animation: fadeIn .5s ease;
+  }
+
+  .setup-title {
+    font-family: 'Instrument Serif', serif; font-size: 22px; font-style: italic;
+    margin-bottom: 4px;
+  }
+
+  .setup-sub { font-size: 12px; color: var(--muted); margin-bottom: 20px; font-weight: 300; }
+
+  .setup-field { margin-bottom: 14px; }
+
+  .setup-label { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--muted); letter-spacing: .1em; margin-bottom: 6px; }
+
+  .setup-input {
+    width: 100%; padding: 10px 12px;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 8px; font-family: 'DM Mono', monospace; font-size: 12px;
+    color: var(--text); outline: none; transition: border-color .2s;
+  }
+
+  .setup-input:focus { border-color: var(--accent3); }
+
+  .setup-btn {
+    width: 100%; padding: 12px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent3));
+    border: none; border-radius: 8px; color: white;
+    font-family: 'Geist', sans-serif; font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: all .2s;
+    box-shadow: 0 2px 16px rgba(124,106,219,.3);
+    margin-top: 4px;
+  }
+
+  .setup-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 24px rgba(124,106,219,.5); }
+
+  /* Input */
+  .input-area {
+    padding: 14px 16px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .input-wrapper {
+    display: flex; align-items: flex-end; gap: 10px;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 14px; padding: 10px 12px; transition: border-color .2s;
+  }
+
+  .input-wrapper:focus-within {
+    border-color: var(--accent3);
+    box-shadow: 0 0 0 3px rgba(74,63,160,.15);
+  }
+
+  #userInput {
+    flex: 1; background: transparent; border: none; outline: none;
+    font-family: 'Geist', sans-serif; font-size: 15px; font-weight: 300;
+    color: var(--text); resize: none; min-height: 22px; max-height: 100px; line-height: 1.5;
+  }
+
+  #userInput::placeholder { color: var(--muted); }
+
+  .send-btn {
+    width: 36px; height: 36px; border-radius: 9px; border: none;
+    background: linear-gradient(135deg, var(--accent2), var(--accent3));
+    color: white; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0; transition: all .2s;
+    box-shadow: 0 2px 12px rgba(124,106,219,.3);
+  }
+
+  .send-btn:hover { transform: translateY(-1px); }
+  .send-btn:active { transform: scale(.95); }
+  .send-btn:disabled { opacity: .4; transform: none; box-shadow: none; }
+
+  .input-hint {
+    text-align: center; font-size: 10px; font-family: 'DM Mono', monospace;
+    color: var(--muted); margin-top: 8px;
+  }
+
+  kbd {
+    padding: 1px 5px; background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 3px; font-family: 'DM Mono', monospace;
+  }
+
+  /* Confidence */
+  .confidence-badge {
+    display: inline-block; font-size: 9px; font-family: 'DM Mono', monospace;
+    padding: 1px 6px; border-radius: 3px; margin-right: 4px; vertical-align: middle;
+  }
+
+  .conf-certain { background: rgba(110,231,183,.1); color: var(--green); }
+  .conf-probable { background: rgba(96,165,250,.1); color: var(--blue); }
+  .conf-hypothesis { background: rgba(251,191,36,.1); color: var(--yellow); }
+
+  /* Overlay sidebar on mobile */
+  .sidebar-overlay {
+    display: none;
+    position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    z-index: 99; backdrop-filter: blur(2px);
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 680px) {
+    .mobile-header { display: flex; }
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      transform: translateX(-100%);
+      padding-top: var(--safe-top);
+    }
+    .sidebar.open { transform: translateX(0); }
+    .sidebar-overlay.open { display: block; }
+    .pipeline-bar { padding: 8px 12px; }
+    .pipe-node { font-size: 8px; padding: 3px 7px; }
+    .pipe-arrow { width: 14px; font-size: 8px; }
+    .chat-area { padding: 16px 12px; }
+    .quick-actions { grid-template-columns: 1fr 1fr; gap: 6px; }
+    .welcome-title { font-size: 28px; }
+    .input-area { padding: 10px 12px; }
+    .input-hint { display: none; }
+    .msg.user { max-width: 92%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Mobile header -->
+<header class="mobile-header">
+  <div class="mobile-logo">
+    <div class="logo-mark">A</div>
+    <span class="logo-text">AIDEN</span>
+  </div>
+  <div class="mobile-status">
+    <div class="status-dot"></div>
+    <span id="syncStatus">SYNC</span>
+  </div>
+  <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+</header>
+
+<div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<div class="app-shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="desktop-logo-mark">A</div>
+        <span class="logo-label">AIDEN</span>
+      </div>
+      <div class="logo-sub">Assistant Exécutif IA</div>
+    </div>
+
+    <div class="sidebar-status">
+      <div class="status-dot"></div>
+      <span>OPÉRATIONNEL</span>
+      <span class="sync-badge" id="syncBadge">SYNC ☁</span>
+    </div>
+
+    <div class="section-label">Mémoire active</div>
+
+    <div class="memory-list" id="memoryList"></div>
+
+    <button class="add-memory-btn" onclick="promptAddMemory()">＋ Mémoriser quelque chose</button>
+
+    <div class="sidebar-footer">
+      <div class="section-label" style="padding:0 0 8px;">Outils actifs</div>
+      <div class="tools-grid">
+        <div class="tool-pill active"><span class="tool-dot"></span>web search</div>
+        <div class="tool-pill active"><span class="tool-dot"></span>mémoire</div>
+        <div class="tool-pill active"><span class="tool-dot"></span>planification</div>
+        <div class="tool-pill active"><span class="tool-dot"></span>raisonnement</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Pipeline -->
+    <div class="pipeline-bar">
+      <div class="pipe-node" id="pipe-input">INPUT</div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node" id="pipe-intent">INTENTION</div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node" id="pipe-memory">MÉMOIRE</div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node" id="pipe-plan">PLAN</div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node" id="pipe-tools">OUTILS</div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node" id="pipe-exec">EXÉCUTION</div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node" id="pipe-output">RÉPONSE</div>
+    </div>
+
+    <!-- Chat -->
+    <div class="chat-area" id="chatArea">
+      <div class="welcome" id="welcomeScreen">
+        <div class="welcome-title">Bonjour.</div>
+        <div class="welcome-sub">Que souhaitez-vous accomplir aujourd'hui ?</div>
+        <div class="quick-actions">
+          <button class="quick-btn" onclick="quickSend('Planifie ma semaine et priorise mes tâches')">
+            <div class="quick-btn-icon">📅</div>
+            <div class="quick-btn-text">Planifier ma semaine</div>
+            <div class="quick-btn-sub">Priorisation & org.</div>
+          </button>
+          <button class="quick-btn" onclick="quickSend('Recherche les dernières actualités importantes')">
+            <div class="quick-btn-icon">🌐</div>
+            <div class="quick-btn-text">Veille & recherche</div>
+            <div class="quick-btn-sub">Avec web search</div>
+          </button>
+          <button class="quick-btn" onclick="quickSend('Aide-moi à rédiger un email professionnel percutant')">
+            <div class="quick-btn-icon">✉️</div>
+            <div class="quick-btn-text">Rédiger un email</div>
+            <div class="quick-btn-sub">Pro & direct</div>
+          </button>
+          <button class="quick-btn" onclick="quickSend('Décompose ce projet complexe en tâches actionnables')">
+            <div class="quick-btn-icon">⚡</div>
+            <div class="quick-btn-text">Décomposer projet</div>
+            <div class="quick-btn-sub">Tasks & priorités</div>
+          </button>
+          <button class="quick-btn" onclick="quickSend('Analyse cette situation et conseille-moi sur la meilleure décision')">
+            <div class="quick-btn-icon">🎯</div>
+            <div class="quick-btn-text">Aide à la décision</div>
+            <div class="quick-btn-sub">Analyse & conseil</div>
+          </button>
+          <button class="quick-btn" onclick="quickSend('Quelles automatisations pourrais-je mettre en place ?')">
+            <div class="quick-btn-icon">🤖</div>
+            <div class="quick-btn-text">Automatisations</div>
+            <div class="quick-btn-sub">Identifier & proposer</div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="input-area">
+      <div class="input-wrapper">
+        <textarea id="userInput" placeholder="Objectif, tâche, question…" rows="1"
+          onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">↑</button>
+      </div>
+      <div class="input-hint"><kbd>Enter</kbd> envoyer · <kbd>Shift+Enter</kbd> nouvelle ligne</div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Setup modal -->
+<div id="setupModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:200; display:flex; align-items:center; justify-content:center; padding:20px;">
+  <div class="setup-card">
+    <div class="setup-title">Configurer AIDEN</div>
+    <div class="setup-sub">Entrez votre clé API Anthropic pour activer l'assistant.</div>
+    <div class="setup-field">
+      <div class="setup-label">CLÉ API ANTHROPIC</div>
+      <input type="password" class="setup-input" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off" />
+    </div>
+    <button class="setup-btn" onclick="saveConfig()">Activer AIDEN →</button>
+  </div>
+</div>
+
+<script>
+// ── SUPABASE CONFIG ──
+const SUPABASE_URL = 'https://njzrrengzeetkccvzteh.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_WFAOyXLHR8f8oKD6H3SWlw_7M2rq5hK';
+
+// ── STATE ──
+const state = {
+  apiKey: localStorage.getItem('aiden_api_key') || '',
+  userId: localStorage.getItem('aiden_user_id') || generateId(),
+  memory: [],
+  history: [],
+  isThinking: false,
+  supabaseReady: false
+};
+
+function generateId() {
+  const id = 'user_' + Math.random().toString(36).substr(2, 9);
+  localStorage.setItem('aiden_user_id', id);
+  return id;
+}
+
+// ── PWA / SERVICE WORKER ──
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+// ── SUPABASE ──
+async function supaFetch(path, method = 'GET', body = null) {
+  const opts = {
+    method,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': method === 'POST' ? 'return=representation' : ''
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, opts);
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : [];
+}
+
+async function initSupabase() {
+  try {
+    // Try to create table if not exists via RPC — fallback: just use it
+    await loadMemoryFromSupabase();
+    state.supabaseReady = true;
+    updateSyncBadge(true);
+  } catch (e) {
+    // Table might not exist yet — create it
+    try {
+      await createMemoryTable();
+      state.supabaseReady = true;
+      updateSyncBadge(true);
+    } catch (e2) {
+      console.warn('Supabase init failed, using local storage', e2);
+      loadMemoryLocal();
+      updateSyncBadge(false);
+    }
+  }
+}
+
+async function createMemoryTable() {
+  // Use Supabase SQL editor endpoint
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/exec_sql`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      sql: `CREATE TABLE IF NOT EXISTS aiden_memory (
+        id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+        user_id text NOT NULL,
+        icon text DEFAULT '📌',
+        text text NOT NULL,
+        tag text DEFAULT 'NOTE',
+        tag_class text DEFAULT 'tag-pref',
+        created_at timestamptz DEFAULT now()
+      );`
+    })
+  });
+  // If RPC doesn't exist, try direct insert to trigger table creation error handling
+  await loadMemoryFromSupabase();
+}
+
+async function loadMemoryFromSupabase() {
+  const data = await supaFetch(`/aiden_memory?user_id=eq.${state.userId}&order=created_at.asc`);
+  state.memory = data.map(row => ({
+    id: row.id,
+    icon: row.icon || '📌',
+    text: row.text,
+    tag: row.tag || 'NOTE',
+    tagClass: row.tag_class || 'tag-pref'
+  }));
+
+  // Seed defaults if empty
+  if (state.memory.length === 0) {
+    await saveMemoryToSupabase({ icon: '👤', text: 'Langue préférée : Français', tag: 'PRÉFÉRENCE', tagClass: 'tag-pref' });
+    await saveMemoryToSupabase({ icon: '🧠', text: 'Style : direct, orienté action', tag: 'PRÉFÉRENCE', tagClass: 'tag-pref' });
+  }
+
+  renderMemory();
+}
+
+async function saveMemoryToSupabase(mem) {
+  try {
+    const rows = await supaFetch('/aiden_memory', 'POST', {
+      user_id: state.userId,
+      icon: mem.icon,
+      text: mem.text,
+      tag: mem.tag,
+      tag_class: mem.tagClass
+    });
+    if (rows && rows[0]) {
+      mem.id = rows[0].id;
+      state.memory.push(mem);
+      renderMemory();
+    }
+  } catch (e) {
+    // Fallback to local
+    state.memory.push(mem);
+    saveMemoryLocal();
+    renderMemory();
+  }
+}
+
+async function deleteMemoryFromSupabase(id, index) {
+  try {
+    await supaFetch(`/aiden_memory?id=eq.${id}`, 'DELETE');
+    state.memory.splice(index, 1);
+  } catch (e) {
+    state.memory.splice(index, 1);
+    saveMemoryLocal();
+  }
+  renderMemory();
+}
+
+function loadMemoryLocal() {
+  const saved = localStorage.getItem('aiden_memory');
+  state.memory = saved ? JSON.parse(saved) : [
+    { icon: '👤', text: 'Langue préférée : Français', tag: 'PRÉFÉRENCE', tagClass: 'tag-pref' },
+    { icon: '🧠', text: 'Style : direct, orienté action', tag: 'PRÉFÉRENCE', tagClass: 'tag-pref' }
+  ];
+}
+
+function saveMemoryLocal() {
+  localStorage.setItem('aiden_memory', JSON.stringify(state.memory));
+}
+
+function updateSyncBadge(synced) {
+  const b = document.getElementById('syncBadge');
+  const s = document.getElementById('syncStatus');
+  if (synced) {
+    b.textContent = 'SYNC ☁';
+    b.style.color = 'var(--blue)';
+    if (s) s.textContent = 'SYNC';
+  } else {
+    b.textContent = 'LOCAL';
+    b.style.color = 'var(--muted)';
+    b.style.borderColor = 'var(--border)';
+    if (s) s.textContent = 'LOCAL';
+  }
+}
+
+// ── MEMORY RENDER ──
+function renderMemory() {
+  const list = document.getElementById('memoryList');
+  list.innerHTML = '';
+  state.memory.forEach((m, i) => {
+    const div = document.createElement('div');
+    div.className = 'memory-item';
+    div.innerHTML = `
+      <span class="memory-icon">${m.icon}</span>
+      <div class="memory-content">
+        ${escapeHTML(m.text)}
+        <div><span class="memory-tag ${m.tagClass}">${m.tag}</span></div>
+      </div>
+    `;
+    div.addEventListener('contextmenu', e => { e.preventDefault(); confirmDeleteMemory(i); });
+    div.addEventListener('touchstart', longPressStart(i));
+    div.addEventListener('touchend', longPressEnd);
+    list.appendChild(div);
+  });
+}
+
+let longPressTimer;
+function longPressStart(i) {
+  return () => { longPressTimer = setTimeout(() => confirmDeleteMemory(i), 600); };
+}
+function longPressEnd() { clearTimeout(longPressTimer); }
+
+function confirmDeleteMemory(i) {
+  if (confirm('Supprimer ce souvenir ?')) {
+    const mem = state.memory[i];
+    if (mem.id && state.supabaseReady) {
+      deleteMemoryFromSupabase(mem.id, i);
+    } else {
+      state.memory.splice(i, 1);
+      saveMemoryLocal();
+      renderMemory();
+    }
+  }
+}
+
+async function promptAddMemory() {
+  const text = prompt('Que souhaitez-vous mémoriser ?');
+  if (!text) return;
+  const mem = { icon: '📌', text, tag: 'MANUEL', tagClass: 'tag-pref' };
+  if (state.supabaseReady) {
+    await saveMemoryToSupabase(mem);
+  } else {
+    state.memory.push(mem);
+    saveMemoryLocal();
+    renderMemory();
+  }
+}
+
+// ── PIPELINE ──
+const PIPES = ['pipe-input','pipe-intent','pipe-memory','pipe-plan','pipe-tools','pipe-exec','pipe-output'];
+
+function resetPipeline() {
+  PIPES.forEach(id => {
+    document.getElementById(id).classList.remove('active','done');
+  });
+}
+
+async function animatePipeline() {
+  resetPipeline();
+  for (let i = 0; i < PIPES.length; i++) {
+    await new Promise(r => setTimeout(r, 320));
+    if (i > 0) {
+      document.getElementById(PIPES[i-1]).classList.remove('active');
+      document.getElementById(PIPES[i-1]).classList.add('done');
+    }
+    document.getElementById(PIPES[i]).classList.add('active');
+  }
+}
+
+function completePipeline() {
+  PIPES.forEach(id => {
+    document.getElementById(id).classList.remove('active');
+    document.getElementById(id).classList.add('done');
+  });
+}
+
+// ── SYSTEM PROMPT ──
+function buildSystemPrompt() {
+  const memText = state.memory.map(m => `- ${m.text} [${m.tag}]`).join('\n');
+  return `Tu es AIDEN, un assistant personnel exécutif avancé.
+
+## MÉMOIRE ACTIVE
+${memText || '(vide)'}
+
+## MISSION
+Assistant exécutif intelligent : organiser, planifier, rechercher, conseiller, exécuter.
+
+## COMPORTEMENT
+- Agis comme un assistant exécutif, pas un chatbot
+- Anticipe les prochaines étapes
+- Pose des questions uniquement si nécessaire
+- Préfère exécuter plutôt qu'expliquer
+
+## STYLE OBLIGATOIRE
+- Ne commence JAMAIS par être d'accord
+- [Certain] / [Probable] / [Hypothèse] avant chaque affirmation
+- Vérité inconfortable en premier
+- Direct, professionnel, sans jargon
+- JAMAIS : "Excellente question", "Absolument", "Certainement"
+
+## FORMAT DE SORTIE
+
+Tâches simples → réponse directe Markdown
+
+Tâches complexes → JSON STRICT :
+{"type":"structured","objectif":"...","plan":["..."],"execution":"...","resultat":"...","prochaines_etapes":["..."],"memoriser":{"should":true,"text":"...","icon":"...","tag":"PROJET|PRÉFÉRENCE|HABITUDE","tagClass":"tag-proj|tag-pref|tag-habit"}}
+
+## MÉMOIRE
+Si info utile à long terme détectée → memoriser.should = true
+
+Réponds en français.`;
+}
+
+// ── CHAT ──
+function hideWelcome() {
+  const w = document.getElementById('welcomeScreen');
+  if (w) w.remove();
+}
+
+function appendMessage(role, content, isHTML = false) {
+  const area = document.getElementById('chatArea');
+  const time = new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `
+    <div class="msg-avatar">${role === 'user' ? '✦' : 'A'}</div>
+    <div class="msg-body">
+      <div class="msg-meta">${role === 'user' ? 'Vous' : 'AIDEN'} · ${time}</div>
+      <div class="msg-bubble">${isHTML ? content : escapeAndFormat(content)}</div>
+    </div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function showThinking() {
+  const area = document.getElementById('chatArea');
+  const steps = [
+    { label: 'Analyse de l\'intention', id: 'ts1' },
+    { label: 'Consultation mémoire', id: 'ts2' },
+    { label: 'Construction du plan', id: 'ts3' },
+    { label: 'Exécution', id: 'ts4' }
+  ];
+  const div = document.createElement('div');
+  div.className = 'thinking';
+  div.id = 'thinkingEl';
+  div.innerHTML = `
+    <div class="thinking-avatar">A</div>
+    <div class="thinking-content">
+      <div class="thinking-steps">
+        ${steps.map(s => `<div class="thinking-step" id="${s.id}"><div class="step-icon">◐</div><span>${s.label}</span></div>`).join('')}
+      </div>
+    </div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+
+  let i = 0;
+  const interval = setInterval(() => {
+    if (i > 0) {
+      const prev = document.getElementById(steps[i-1].id);
+      if (prev) { prev.classList.remove('active'); prev.classList.add('done'); prev.querySelector('.step-icon').textContent = '✓'; }
+    }
+    if (i < steps.length) {
+      const curr = document.getElementById(steps[i].id);
+      if (curr) curr.classList.add('active');
+      i++;
+    } else clearInterval(interval);
+  }, 500);
+
+  return { div, interval };
+}
+
+function removeThinking(ref) {
+  if (ref) { clearInterval(ref.interval); ref.div.remove(); }
+}
+
+async function sendMessage() {
+  const input = document.getElementById('userInput');
+  const text = input.value.trim();
+  if (!text || state.isThinking) return;
+
+  if (!state.apiKey) {
+    document.getElementById('setupModal').style.display = 'flex';
+    return;
+  }
+
+  hideWelcome();
+  input.value = '';
+  autoResize(input);
+  state.isThinking = true;
+  document.getElementById('sendBtn').disabled = true;
+  if (window.innerWidth <= 680) closeSidebar();
+
+  appendMessage('user', text);
+  const thinking = showThinking();
+  animatePipeline();
+  state.history.push({ role: 'user', content: text });
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': state.apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2000,
+        system: buildSystemPrompt(),
+        messages: state.history
+      })
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+
+    const raw = data.content[0].text;
+    state.history.push({ role: 'assistant', content: raw });
+
+    removeThinking(thinking);
+    completePipeline();
+
+    // Try structured JSON
+    try {
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        if (parsed.type === 'structured') {
+          renderStructured(parsed);
+          if (parsed.memoriser?.should) offerMemory(parsed.memoriser);
+          return;
+        }
+      }
+    } catch {}
+
+    appendMessage('assistant', raw);
+
+  } catch (err) {
+    removeThinking(thinking);
+    resetPipeline();
+    appendMessage('assistant', `**Erreur.** ${err.message}\n\nVérifiez votre clé API.`);
+  }
+
+  state.isThinking = false;
+  document.getElementById('sendBtn').disabled = false;
+  input.focus();
+}
+
+function renderStructured(data) {
+  const area = document.getElementById('chatArea');
+  const time = new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+
+  const planHTML = (data.plan || []).map((p, i) =>
+    `<li class="plan-item"><span class="plan-num">${String(i+1).padStart(2,'0')}</span><span>${escapeAndFormat(p)}</span></li>`
+  ).join('');
+
+  const nextHTML = (data.prochaines_etapes || []).map(n =>
+    `<div class="next-item">${escapeAndFormat(n)}</div>`
+  ).join('');
+
+  const div = document.createElement('div');
+  div.className = 'msg assistant';
+  div.innerHTML = `
+    <div class="msg-avatar">A</div>
+    <div class="msg-body" style="max-width:calc(100% - 40px)">
+      <div class="msg-meta">AIDEN · ${time}</div>
+      <div class="structured-block">
+        ${data.objectif ? `<div class="block-section"><div class="block-label objective">OBJECTIF</div><div class="block-content">${escapeAndFormat(data.objectif)}</div></div>` : ''}
+        ${planHTML ? `<div class="block-section"><div class="block-label plan">PLAN</div><ul class="plan-items">${planHTML}</ul></div>` : ''}
+        ${data.execution ? `<div class="block-section"><div class="block-label execution">EXÉCUTION</div><div class="block-content">${escapeAndFormat(data.execution)}</div></div>` : ''}
+        ${data.resultat ? `<div class="block-section"><div class="block-label result">RÉSULTAT</div><div class="block-content">${escapeAndFormat(data.resultat)}</div></div>` : ''}
+        ${nextHTML ? `<div class="block-section"><div class="block-label next">PROCHAINES ÉTAPES</div><div class="next-items">${nextHTML}</div></div>` : ''}
+      </div>
+    </div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function offerMemory(mem) {
+  const area = document.getElementById('chatArea');
+  const id = 'mo_' + Date.now();
+  const div = document.createElement('div');
+  div.className = 'memory-prompt';
+  div.id = id;
+  div.innerHTML = `
+    <span>💾</span>
+    <span>Mémoriser : "${escapeHTML(mem.text)}"</span>
+    <div class="memory-prompt-btns">
+      <button class="mp-btn yes" onclick="acceptMemory('${id}', ${JSON.stringify(mem).replace(/'/g, "\\'")})">Oui</button>
+      <button class="mp-btn no" onclick="document.getElementById('${id}').remove()">Non</button>
+    </div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+async function acceptMemory(elId, mem) {
+  document.getElementById(elId)?.remove();
+  if (state.supabaseReady) {
+    await saveMemoryToSupabase(mem);
+  } else {
+    state.memory.push(mem);
+    saveMemoryLocal();
+    renderMemory();
+  }
+}
+
+// ── SETUP ──
+function saveConfig() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key.startsWith('sk-')) { alert('Clé invalide (doit commencer par sk-)'); return; }
+  state.apiKey = key;
+  localStorage.setItem('aiden_api_key', key);
+  document.getElementById('setupModal').style.display = 'none';
+}
+
+// ── UTILS ──
+function escapeHTML(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function escapeAndFormat(text) {
+  let t = escapeHTML(text)
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/`(.*?)`/g,'<code style="font-family:DM Mono,monospace;font-size:12px;background:var(--surface2);padding:1px 5px;border-radius:3px;color:var(--accent)">$1</code>')
+    .replace(/\n/g,'<br>');
+  t = t.replace(/\[Certain\]/g,'<span class="confidence-badge conf-certain">CERTAIN</span>');
+  t = t.replace(/\[Probable\]/g,'<span class="confidence-badge conf-probable">PROBABLE</span>');
+  t = t.replace(/\[Hypothèse\]/g,'<span class="confidence-badge conf-hypothesis">HYPOTHÈSE</span>');
+  return t;
+}
+
+function quickSend(text) {
+  document.getElementById('userInput').value = text;
+  sendMessage();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('open');
+}
+
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+
+// ── INIT ──
+async function init() {
+  if (!state.apiKey) {
+    document.getElementById('setupModal').style.display = 'flex';
+  }
+  await initSupabase();
+}
+
+init();
+</script>
+</body>
+</html>
