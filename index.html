@@ -1,1 +1,1702 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AIDEN">
+<meta name="theme-color" content="#0a0a0b">
+<link rel="manifest" href="manifest.json">
+<title>AIDEN v2 — Assistant Exécutif</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0b; --surface: #111113; --surface2: #18181c;
+  --border: #1e1e24; --border2: #2a2a33; --text: #e8e8ec;
+  --muted: #6b6b7a; --accent: #c8b8ff; --accent2: #7c6adb;
+  --accent3: #4a3fa0; --green: #6ee7b7; --red: #f87171;
+  --yellow: #fbbf24; --blue: #60a5fa; --glow: rgba(124,106,219,.15);
+  --safe-top: env(safe-area-inset-top); --safe-bottom: env(safe-area-inset-bottom);
+}
+[data-theme="light"] {
+  --bg: #f5f5f7; --surface: #ffffff; --surface2: #f0f0f5;
+  --border: #e2e2e8; --border2: #d0d0da; --text: #1a1a2e;
+  --muted: #8888a0; --glow: rgba(124,106,219,.1);
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { height:100%; height:-webkit-fill-available; overscroll-behavior:none; }
+body {
+  font-family:'Geist',sans-serif; background:var(--bg); color:var(--text);
+  display:flex; flex-direction:column; overflow:hidden;
+  padding-top:var(--safe-top); padding-bottom:var(--safe-bottom);
+}
 
+/* MOBILE HEADER */
+.mobile-header {
+  display:none; align-items:center; justify-content:space-between;
+  padding:12px 16px; background:var(--surface); border-bottom:1px solid var(--border); flex-shrink:0;
+}
+.mobile-logo { display:flex; align-items:center; gap:8px; }
+.logo-mark {
+  width:28px; height:28px; background:linear-gradient(135deg,var(--accent2),var(--accent3));
+  border-radius:7px; display:flex; align-items:center; justify-content:center;
+  font-family:'Instrument Serif',serif; font-size:14px; color:white; box-shadow:0 0 16px var(--glow);
+}
+.logo-text { font-family:'Instrument Serif',serif; font-size:18px; color:var(--text); }
+.mobile-status { display:flex; align-items:center; gap:6px; font-size:10px; font-family:'DM Mono',monospace; color:var(--green); }
+.status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green); animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.icon-btn { width:32px; height:32px; background:transparent; border:none; color:var(--muted); font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; border-radius:6px; }
+
+/* LAYOUT */
+.app-shell { flex:1; display:flex; overflow:hidden; min-height:0; }
+
+/* SIDEBAR */
+.sidebar {
+  width:270px; min-width:270px; background:var(--surface);
+  border-right:1px solid var(--border); display:flex; flex-direction:column;
+  transition:transform .3s cubic-bezier(.4,0,.2,1); z-index:100;
+}
+.sidebar-header { padding:20px 20px 16px; border-bottom:1px solid var(--border); }
+.logo { display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+.desktop-logo-mark {
+  width:32px; height:32px; background:linear-gradient(135deg,var(--accent2),var(--accent3));
+  border-radius:8px; display:flex; align-items:center; justify-content:center;
+  font-family:'Instrument Serif',serif; font-size:16px; color:white; box-shadow:0 0 20px var(--glow);
+}
+.logo-label { font-family:'Instrument Serif',serif; font-size:20px; color:var(--text); }
+.logo-sub { font-size:10px; font-family:'DM Mono',monospace; color:var(--muted); letter-spacing:.15em; text-transform:uppercase; margin-left:42px; }
+.sidebar-status {
+  padding:8px 20px; display:flex; align-items:center; gap:8px;
+  background:rgba(110,231,183,.04); border-bottom:1px solid var(--border);
+  font-size:11px; font-family:'DM Mono',monospace; color:var(--green);
+}
+.sync-badge { margin-left:auto; font-size:9px; padding:1px 6px; background:rgba(96,165,250,.1); border:1px solid rgba(96,165,250,.2); border-radius:3px; color:var(--blue); }
+.section-label { padding:14px 20px 6px; font-size:10px; font-family:'DM Mono',monospace; color:var(--muted); letter-spacing:.15em; text-transform:uppercase; }
+
+/* SIDEBAR TABS */
+.sidebar-tabs { display:flex; border-bottom:1px solid var(--border); padding:0 12px; gap:4px; }
+.stab { padding:8px 12px; font-size:11px; font-family:'DM Mono',monospace; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; transition:all .15s; background:none; border-top:none; border-left:none; border-right:none; }
+.stab.active { color:var(--accent); border-bottom-color:var(--accent2); }
+
+.tab-content { display:none; flex:1; flex-direction:column; overflow:hidden; min-height:0; }
+.tab-content.active { display:flex; }
+
+/* MEMORY */
+.memory-list { flex:1; overflow-y:auto; padding:0 12px; }
+.memory-list::-webkit-scrollbar { width:3px; }
+.memory-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+.memory-item { padding:8px 10px; border-radius:6px; margin-bottom:2px; cursor:pointer; display:flex; align-items:flex-start; gap:8px; transition:background .15s; }
+.memory-item:hover, .memory-item:active { background:var(--surface2); }
+.memory-icon { font-size:12px; margin-top:1px; flex-shrink:0; }
+.memory-content { font-size:12px; color:var(--text); line-height:1.4; font-weight:300; }
+.memory-tag { display:inline-block; font-size:9px; font-family:'DM Mono',monospace; padding:1px 6px; border-radius:3px; margin-top:3px; letter-spacing:.05em; }
+.tag-pref { background:rgba(200,184,255,.1); color:var(--accent); }
+.tag-proj { background:rgba(96,165,250,.1); color:var(--blue); }
+.tag-habit { background:rgba(110,231,183,.1); color:var(--green); }
+.add-memory-btn { margin:6px 12px; padding:7px 10px; background:transparent; border:1px dashed var(--border2); border-radius:6px; color:var(--muted); font-size:11px; font-family:'Geist',sans-serif; cursor:pointer; transition:all .15s; display:flex; align-items:center; gap:6px; width:calc(100% - 24px); }
+.add-memory-btn:hover { border-color:var(--accent2); color:var(--accent); background:rgba(124,106,219,.05); }
+
+/* DOCS */
+.docs-list { flex:1; overflow-y:auto; padding:0 12px; }
+.doc-item { padding:8px 10px; border-radius:6px; margin-bottom:4px; background:var(--surface2); border:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+.doc-icon { font-size:16px; flex-shrink:0; }
+.doc-info { flex:1; min-width:0; }
+.doc-name { font-size:12px; color:var(--text); font-weight:400; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.doc-meta { font-size:10px; color:var(--muted); font-family:'DM Mono',monospace; }
+.doc-del { background:none; border:none; color:var(--muted); cursor:pointer; font-size:14px; padding:4px; flex-shrink:0; }
+.doc-del:hover { color:var(--red); }
+.upload-btn { margin:6px 12px; padding:10px; background:transparent; border:1px dashed var(--border2); border-radius:6px; color:var(--muted); font-size:11px; font-family:'Geist',sans-serif; cursor:pointer; transition:all .15s; display:flex; align-items:center; justify-content:center; gap:8px; width:calc(100% - 24px); }
+.upload-btn:hover { border-color:var(--accent2); color:var(--accent); background:rgba(124,106,219,.05); }
+#fileInput { display:none; }
+.upload-progress { margin:0 12px 8px; padding:8px 10px; background:rgba(96,165,250,.08); border:1px solid rgba(96,165,250,.2); border-radius:6px; font-size:11px; font-family:'DM Mono',monospace; color:var(--blue); display:none; }
+
+/* HISTORY */
+.history-list { flex:1; overflow-y:auto; padding:0 12px; }
+.history-item { padding:8px 10px; border-radius:6px; margin-bottom:3px; cursor:pointer; transition:background .15s; border:1px solid transparent; }
+.history-item:hover { background:var(--surface2); border-color:var(--border); }
+.history-title { font-size:12px; color:var(--text); font-weight:400; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.history-date { font-size:10px; color:var(--muted); font-family:'DM Mono',monospace; margin-top:2px; }
+.history-clear { margin:6px 12px; padding:7px 10px; background:transparent; border:1px solid var(--border); border-radius:6px; color:var(--muted); font-size:11px; font-family:'DM Mono',monospace; cursor:pointer; width:calc(100% - 24px); transition:all .15s; }
+.history-clear:hover { border-color:var(--red); color:var(--red); }
+
+/* SIDEBAR FOOTER */
+.sidebar-footer { padding:14px 20px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:10px; }
+.tools-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+.tool-pill { padding:5px 8px; background:var(--surface2); border:1px solid var(--border); border-radius:5px; font-size:10px; font-family:'DM Mono',monospace; color:var(--muted); display:flex; align-items:center; gap:5px; }
+.tool-pill.active { border-color:var(--accent3); color:var(--accent); background:rgba(124,106,219,.08); }
+.tool-dot { width:5px; height:5px; border-radius:50%; background:var(--border2); flex-shrink:0; }
+.tool-pill.active .tool-dot { background:var(--accent); box-shadow:0 0 6px var(--accent2); }
+.theme-btn { width:100%; padding:7px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; color:var(--muted); font-size:11px; font-family:'DM Mono',monospace; cursor:pointer; transition:all .15s; }
+.theme-btn:hover { border-color:var(--border2); color:var(--text); }
+
+/* MAIN */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+
+/* PIPELINE */
+.pipeline-bar { padding:10px 20px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:0; overflow-x:auto; flex-shrink:0; }
+.pipeline-bar::-webkit-scrollbar { display:none; }
+.pipe-node { padding:3px 10px; border-radius:4px; font-size:9px; font-family:'DM Mono',monospace; letter-spacing:.08em; color:var(--muted); background:var(--surface2); border:1px solid var(--border); white-space:nowrap; transition:all .3s; }
+.pipe-node.active { color:var(--accent); background:rgba(124,106,219,.1); border-color:var(--accent3); box-shadow:0 0 10px rgba(124,106,219,.2); }
+.pipe-node.done { color:var(--green); background:rgba(110,231,183,.06); border-color:rgba(110,231,183,.2); }
+.pipe-arrow { width:20px; text-align:center; color:var(--border2); font-size:9px; flex-shrink:0; }
+
+/* CHAT */
+.chat-area { flex:1; overflow-y:auto; padding:24px 20px; display:flex; flex-direction:column; gap:20px; -webkit-overflow-scrolling:touch; }
+.chat-area::-webkit-scrollbar { width:3px; }
+.chat-area::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+
+/* WELCOME */
+.welcome { text-align:center; padding:32px 16px; animation:fadeIn .6s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+.welcome-title { font-family:'Instrument Serif',serif; font-size:36px; font-style:italic; margin-bottom:6px; color:var(--text); }
+.welcome-sub { font-size:13px; color:var(--muted); font-weight:300; margin-bottom:28px; }
+.quick-actions { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; max-width:680px; margin:0 auto; }
+.quick-btn { padding:12px 14px; background:var(--surface); border:1px solid var(--border); border-radius:10px; text-align:left; cursor:pointer; transition:all .2s; color:var(--text); font-family:'Geist',sans-serif; }
+.quick-btn:hover, .quick-btn:active { background:var(--surface2); border-color:var(--border2); transform:translateY(-1px); }
+.quick-btn-icon { font-size:16px; margin-bottom:6px; }
+.quick-btn-text { font-size:12px; font-weight:400; line-height:1.3; }
+.quick-btn-sub { font-size:10px; color:var(--muted); margin-top:2px; font-family:'DM Mono',monospace; }
+
+/* MESSAGES */
+.msg { display:flex; gap:12px; animation:slideIn .3s ease; max-width:100%; }
+@keyframes slideIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+.msg.user { flex-direction:row-reverse; margin-left:auto; max-width:85%; }
+.msg-avatar { width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; font-family:'Instrument Serif',serif; }
+.msg.user .msg-avatar { background:var(--surface2); border:1px solid var(--border2); color:var(--muted); }
+.msg.assistant .msg-avatar { background:linear-gradient(135deg,var(--accent2),var(--accent3)); color:white; box-shadow:0 0 14px var(--glow); }
+.msg-body { max-width:calc(100% - 40px); }
+.msg.user .msg-body { align-items:flex-end; display:flex; flex-direction:column; }
+.msg-meta { font-size:10px; font-family:'DM Mono',monospace; color:var(--muted); margin-bottom:4px; }
+.msg-bubble { padding:12px 16px; border-radius:12px; font-size:14px; line-height:1.65; font-weight:300; }
+.msg.user .msg-bubble { background:var(--surface2); border:1px solid var(--border2); border-radius:12px 4px 12px 12px; color:var(--text); }
+.msg.assistant .msg-bubble { background:var(--surface); border:1px solid var(--border); border-radius:4px 12px 12px 12px; color:var(--text); }
+
+/* STRUCTURED */
+.structured-block { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+.block-section { border-bottom:1px solid var(--border); padding:12px 16px; }
+.block-section:last-child { border-bottom:none; }
+.block-label { font-size:9px; font-family:'DM Mono',monospace; letter-spacing:.15em; text-transform:uppercase; margin-bottom:6px; font-weight:500; }
+.block-label.objective { color:var(--accent); }
+.block-label.plan { color:var(--blue); }
+.block-label.execution { color:var(--yellow); }
+.block-label.result { color:var(--green); }
+.block-label.next { color:var(--muted); }
+.block-content { font-size:13px; line-height:1.6; font-weight:300; color:var(--text); }
+.plan-items { list-style:none; display:flex; flex-direction:column; gap:4px; }
+.plan-item { display:flex; align-items:flex-start; gap:8px; font-size:13px; font-weight:300; color:var(--text); }
+.plan-num { font-family:'DM Mono',monospace; font-size:10px; color:var(--muted); padding-top:2px; min-width:18px; }
+.next-items { display:flex; flex-direction:column; gap:5px; }
+.next-item { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); font-family:'DM Mono',monospace; }
+.next-item::before { content:'→'; color:var(--accent2); }
+
+/* THINKING */
+.thinking { display:flex; gap:12px; animation:fadeIn .3s ease; }
+.thinking-avatar { width:28px; height:28px; border-radius:7px; background:linear-gradient(135deg,var(--accent2),var(--accent3)); display:flex; align-items:center; justify-content:center; font-family:'Instrument Serif',serif; font-size:12px; color:white; box-shadow:0 0 14px var(--glow); flex-shrink:0; }
+.thinking-content { background:var(--surface); border:1px solid var(--border); border-radius:4px 12px 12px 12px; padding:12px 16px; }
+.thinking-steps { display:flex; flex-direction:column; gap:6px; }
+.thinking-step { display:flex; align-items:center; gap:8px; font-size:11px; font-family:'DM Mono',monospace; color:var(--muted); transition:all .3s; }
+.thinking-step.active { color:var(--accent); }
+.thinking-step.done { color:var(--green); }
+.step-icon { width:13px; height:13px; border-radius:50%; background:var(--border2); display:flex; align-items:center; justify-content:center; font-size:7px; flex-shrink:0; }
+.thinking-step.active .step-icon { background:var(--accent2); animation:spin 1s linear infinite; }
+.thinking-step.done .step-icon { background:var(--green); }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+/* MEMORY PROMPT */
+.memory-prompt { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:10px 14px; background:rgba(200,184,255,.05); border:1px solid rgba(200,184,255,.15); border-radius:8px; font-size:12px; color:var(--accent); font-family:'DM Mono',monospace; }
+.memory-prompt-btns { display:flex; gap:6px; margin-left:auto; }
+.mp-btn { padding:3px 10px; border-radius:4px; font-size:10px; font-family:'DM Mono',monospace; cursor:pointer; border:none; transition:all .15s; }
+.mp-btn.yes { background:rgba(200,184,255,.2); color:var(--accent); }
+.mp-btn.yes:hover { background:rgba(200,184,255,.35); }
+.mp-btn.no { background:transparent; color:var(--muted); }
+
+/* DOC CONTEXT INDICATOR */
+.doc-context-bar { padding:6px 20px; background:rgba(96,165,250,.06); border-bottom:1px solid rgba(96,165,250,.15); font-size:11px; font-family:'DM Mono',monospace; color:var(--blue); display:none; align-items:center; gap:8px; flex-shrink:0; }
+.doc-context-bar.active { display:flex; }
+.doc-context-close { background:none; border:none; color:var(--muted); cursor:pointer; font-size:14px; margin-left:auto; }
+
+/* INPUT */
+.input-area { padding:14px 16px; background:var(--surface); border-top:1px solid var(--border); flex-shrink:0; }
+.input-toolbar { display:flex; align-items:center; gap:6px; margin-bottom:8px; }
+.toolbar-btn { padding:4px 10px; background:var(--surface2); border:1px solid var(--border); border-radius:5px; font-size:10px; font-family:'DM Mono',monospace; color:var(--muted); cursor:pointer; transition:all .15s; white-space:nowrap; }
+.toolbar-btn:hover { border-color:var(--border2); color:var(--text); }
+.toolbar-btn.active { border-color:var(--accent3); color:var(--accent); background:rgba(124,106,219,.08); }
+.input-wrapper { display:flex; align-items:flex-end; gap:10px; background:var(--surface2); border:1px solid var(--border2); border-radius:14px; padding:10px 12px; transition:border-color .2s; }
+.input-wrapper:focus-within { border-color:var(--accent3); box-shadow:0 0 0 3px rgba(74,63,160,.15); }
+#userInput { flex:1; background:transparent; border:none; outline:none; font-family:'Geist',sans-serif; font-size:15px; font-weight:300; color:var(--text); resize:none; min-height:22px; max-height:100px; line-height:1.5; }
+#userInput::placeholder { color:var(--muted); }
+.mic-btn { width:34px; height:34px; border-radius:8px; border:none; background:var(--surface); border:1px solid var(--border2); color:var(--muted); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; transition:all .2s; }
+.mic-btn.recording { background:rgba(248,113,113,.15); border-color:var(--red); color:var(--red); animation:pulse 1s infinite; }
+.send-btn { width:36px; height:36px; border-radius:9px; border:none; background:linear-gradient(135deg,var(--accent2),var(--accent3)); color:white; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; transition:all .2s; box-shadow:0 2px 12px rgba(124,106,219,.3); }
+.send-btn:hover { transform:translateY(-1px); }
+.send-btn:active { transform:scale(.95); }
+.send-btn:disabled { opacity:.4; transform:none; box-shadow:none; }
+.input-hint { text-align:center; font-size:10px; font-family:'DM Mono',monospace; color:var(--muted); margin-top:8px; }
+kbd { padding:1px 5px; background:var(--surface2); border:1px solid var(--border2); border-radius:3px; font-family:'DM Mono',monospace; }
+
+/* SETUP MODAL */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:200; align-items:center; justify-content:center; padding:20px; }
+.modal-overlay.open { display:flex; }
+.setup-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:24px; max-width:480px; width:100%; animation:fadeIn .5s ease; }
+.setup-title { font-family:'Instrument Serif',serif; font-size:22px; font-style:italic; margin-bottom:4px; color:var(--text); }
+.setup-sub { font-size:12px; color:var(--muted); margin-bottom:20px; font-weight:300; }
+.setup-field { margin-bottom:14px; }
+.setup-label { font-size:10px; font-family:'DM Mono',monospace; color:var(--muted); letter-spacing:.1em; margin-bottom:6px; display:block; }
+.setup-input { width:100%; padding:10px 12px; background:var(--surface2); border:1px solid var(--border2); border-radius:8px; font-family:'DM Mono',monospace; font-size:12px; color:var(--text); outline:none; transition:border-color .2s; }
+.setup-input:focus { border-color:var(--accent3); }
+.setup-btn { width:100%; padding:12px; background:linear-gradient(135deg,var(--accent2),var(--accent3)); border:none; border-radius:8px; color:white; font-family:'Geist',sans-serif; font-size:14px; font-weight:500; cursor:pointer; transition:all .2s; box-shadow:0 2px 16px rgba(124,106,219,.3); margin-top:4px; }
+.setup-btn:hover { transform:translateY(-1px); box-shadow:0 4px 24px rgba(124,106,219,.5); }
+
+/* CONFIDENCE */
+.confidence-badge { display:inline-block; font-size:9px; font-family:'DM Mono',monospace; padding:1px 6px; border-radius:3px; margin-right:4px; vertical-align:middle; }
+.conf-certain { background:rgba(110,231,183,.1); color:var(--green); }
+.conf-probable { background:rgba(96,165,250,.1); color:var(--blue); }
+.conf-hypothesis { background:rgba(251,191,36,.1); color:var(--yellow); }
+
+/* OVERLAY */
+.sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:99; backdrop-filter:blur(2px); }
+.sidebar-overlay.open { display:block; }
+
+/* RESPONSIVE */
+@media (max-width:680px) {
+  .mobile-header { display:flex; }
+  .sidebar { position:fixed; top:0; left:0; bottom:0; transform:translateX(-100%); padding-top:var(--safe-top); }
+  .sidebar.open { transform:translateX(0); }
+  .pipeline-bar { padding:8px 12px; }
+  .pipe-node { font-size:8px; padding:3px 7px; }
+  .pipe-arrow { width:14px; font-size:8px; }
+  .chat-area { padding:16px 12px; }
+  .quick-actions { grid-template-columns:1fr 1fr; gap:6px; }
+  .welcome-title { font-size:28px; }
+  .input-area { padding:10px 12px; }
+  .input-hint { display:none; }
+  .msg.user { max-width:92%; }
+  .input-toolbar { overflow-x:auto; }
+  .input-toolbar::-webkit-scrollbar { display:none; }
+}
+
+/* ── REPORTING ── */
+.rep-container { padding:12px; display:flex; flex-direction:column; gap:12px; min-height:0; }
+.rep-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.rep-title { font-size:13px; font-weight:500; color:var(--text); }
+.rep-controls { display:flex; gap:6px; flex-wrap:wrap; }
+.rep-select { background:var(--surface2); border:1px solid var(--border2); border-radius:6px; color:var(--text); font-family:"DM Mono",monospace; font-size:10px; padding:4px 8px; outline:none; }
+.rep-btn { padding:5px 10px; border-radius:5px; font-size:10px; font-family:"DM Mono",monospace; cursor:pointer; border:1px solid var(--border2); background:var(--surface2); color:var(--muted); transition:all .15s; white-space:nowrap; }
+.rep-btn:hover { color:var(--text); border-color:var(--text); }
+.rep-btn-primary { background:rgba(124,106,219,.15); border-color:var(--accent3); color:var(--accent); }
+.rep-btn-primary:hover { background:rgba(124,106,219,.3); }
+.rep-kpis { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.rep-kpi { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:10px 12px; }
+.rep-kpi-label { font-size:9px; font-family:"DM Mono",monospace; color:var(--muted); letter-spacing:.1em; margin-bottom:4px; }
+.rep-kpi-value { font-size:15px; font-weight:500; color:var(--text); }
+.rep-kpi-sub { font-size:10px; color:var(--muted); font-family:"DM Mono",monospace; margin-top:2px; }
+.rep-tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); }
+.rep-tab { padding:6px 12px; font-size:10px; font-family:"DM Mono",monospace; color:var(--muted); cursor:pointer; border:none; background:none; border-bottom:2px solid transparent; transition:all .15s; }
+.rep-tab.active { color:var(--accent); border-bottom-color:var(--accent2); }
+.rep-table-wrap { overflow-x:auto; border:1px solid var(--border); border-radius:8px; }
+.rep-table { width:100%; border-collapse:collapse; font-size:11px; }
+.rep-table th { padding:8px 10px; text-align:left; font-family:"DM Mono",monospace; font-size:9px; color:var(--muted); letter-spacing:.08em; background:var(--surface2); border-bottom:1px solid var(--border); white-space:nowrap; }
+.rep-table td { padding:6px 8px; border-bottom:1px solid var(--border); color:var(--text); vertical-align:middle; }
+.rep-table tr:last-child td { border-bottom:none; }
+.rep-table tr:hover td { background:rgba(255,255,255,.02); }
+.rep-total-row td { background:var(--surface2); font-size:11px; }
+.rep-input { background:var(--surface); border:1px solid var(--border); border-radius:4px; color:var(--text); font-family:"Geist",sans-serif; font-size:11px; padding:3px 6px; width:90px; outline:none; }
+.rep-input:focus { border-color:var(--accent3); }
+.rep-input-sm { width:60px; }
+.rep-input-lg { width:160px; }
+.rep-client-name { font-size:11px; font-weight:400; color:var(--text); }
+.rep-client-type { font-size:9px; color:var(--muted); font-family:"DM Mono",monospace; }
+.rep-badge { font-size:9px; font-family:"DM Mono",monospace; padding:2px 6px; border-radius:3px; background:rgba(96,165,250,.1); color:var(--blue); }
+.rep-del-btn { background:none; border:none; color:var(--muted); cursor:pointer; font-size:12px; padding:2px 4px; }
+.rep-del-btn:hover { color:var(--red); }
+.rep-add-btn { margin:8px 0; padding:7px 12px; background:transparent; border:1px dashed var(--border2); border-radius:6px; color:var(--muted); font-size:11px; font-family:"Geist",sans-serif; cursor:pointer; transition:all .15s; width:100%; }
+.rep-add-btn:hover { border-color:var(--accent2); color:var(--accent); }
+
+</style>
+</head>
+<body>
+
+<header class="mobile-header">
+  <div class="mobile-logo">
+    <div class="logo-mark">A</div>
+    <span class="logo-text">AIDEN</span>
+  </div>
+  <div class="mobile-status">
+    <div class="status-dot"></div>
+    <span id="syncStatus">SYNC</span>
+  </div>
+  <button class="icon-btn" onclick="toggleSidebar()">☰</button>
+</header>
+
+<div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<div class="app-shell">
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="logo">
+      <div class="desktop-logo-mark">A</div>
+      <span class="logo-label">AIDEN</span>
+    </div>
+    <div class="logo-sub">Assistant Exécutif v2</div>
+  </div>
+  <div class="sidebar-status">
+    <div class="status-dot"></div>
+    <span>OPÉRATIONNEL</span>
+    <span class="sync-badge" id="syncBadge">SYNC ☁</span>
+  </div>
+
+  <div class="sidebar-tabs">
+    <button class="stab active" onclick="switchTab('memory')">MÉMOIRE</button>
+    <button class="stab" onclick="switchTab('docs')">DOCS</button>
+    <button class="stab" onclick="switchTab('history')">HISTORIQUE</button>
+    <button class="stab" onclick="switchTab('reporting')">📊</button>
+  </div>
+
+  <!-- MEMORY TAB -->
+  <div class="tab-content active" id="tab-memory">
+    <div class="memory-list" id="memoryList"></div>
+    <button class="add-memory-btn" onclick="promptAddMemory()">＋ Mémoriser quelque chose</button>
+  </div>
+
+  <!-- DOCS TAB -->
+  <div class="tab-content" id="tab-docs">
+    <div class="upload-progress" id="uploadProgress">⏳ Traitement en cours...</div>
+    <div class="docs-list" id="docsList"></div>
+    <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv" multiple onchange="handleFileUpload(event)">
+    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+      📎 Ajouter PDF, Word, Excel...
+    </button>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div class="tab-content" id="tab-history">
+    <div class="history-list" id="historyList"></div>
+    <button class="history-clear" onclick="clearHistory()">🗑 Effacer l'historique</button>
+  </div>
+
+  <!-- REPORTING TAB -->
+  <div class="tab-content" id="tab-reporting" style="overflow-y:auto;flex:1">
+    <div style="padding:16px 12px;font-size:12px;color:var(--muted);text-align:center">Chargement...</div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="tools-grid">
+      <div class="tool-pill active"><span class="tool-dot"></span>web search</div>
+      <div class="tool-pill active"><span class="tool-dot"></span>mémoire</div>
+      <div class="tool-pill active"><span class="tool-dot"></span>documents</div>
+      <div class="tool-pill active"><span class="tool-dot"></span>vocal</div>
+    </div>
+    <button class="theme-btn" onclick="toggleTheme()">☀ / ☾ Thème clair/sombre</button>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="pipeline-bar">
+    <div class="pipe-node" id="pipe-input">INPUT</div><div class="pipe-arrow">→</div>
+    <div class="pipe-node" id="pipe-intent">INTENTION</div><div class="pipe-arrow">→</div>
+    <div class="pipe-node" id="pipe-memory">MÉMOIRE</div><div class="pipe-arrow">→</div>
+    <div class="pipe-node" id="pipe-plan">PLAN</div><div class="pipe-arrow">→</div>
+    <div class="pipe-node" id="pipe-tools">OUTILS</div><div class="pipe-arrow">→</div>
+    <div class="pipe-node" id="pipe-exec">EXÉCUTION</div><div class="pipe-arrow">→</div>
+    <div class="pipe-node" id="pipe-output">RÉPONSE</div>
+  </div>
+
+  <div class="doc-context-bar" id="docContextBar">
+    <span>📄</span>
+    <span id="docContextText">Document actif dans le contexte</span>
+    <button class="doc-context-close" onclick="clearDocContext()">✕</button>
+  </div>
+
+  <div class="chat-area" id="chatArea">
+    <div class="welcome" id="welcomeScreen">
+      <div class="welcome-title">Bonjour.</div>
+      <div class="welcome-sub">Que souhaitez-vous accomplir aujourd'hui ?</div>
+      <div class="quick-actions">
+        <button class="quick-btn" onclick="quickSend('Planifie ma semaine et priorise mes tâches')">
+          <div class="quick-btn-icon">📅</div><div class="quick-btn-text">Planifier ma semaine</div><div class="quick-btn-sub">Priorisation & org.</div>
+        </button>
+        <button class="quick-btn" onclick="quickSend('Fais-moi un brief du jour : priorités, objectifs, points de vigilance')">
+          <div class="quick-btn-icon">☀️</div><div class="quick-btn-text">Brief du jour</div><div class="quick-btn-sub">Priorités & objectifs</div>
+        </button>
+        <button class="quick-btn" onclick="quickSend('Aide-moi à rédiger un email commercial percutant')">
+          <div class="quick-btn-icon">✉️</div><div class="quick-btn-text">Email commercial</div><div class="quick-btn-sub">Pro & direct</div>
+        </button>
+        <button class="quick-btn" onclick="quickSend('Prépare-moi une présentation commerciale structurée slide par slide')">
+          <div class="quick-btn-icon">📊</div><div class="quick-btn-text">Créer présentation</div><div class="quick-btn-sub">Slides structurées</div>
+        </button>
+        <button class="quick-btn" onclick="quickSend('Traduis ce document en anglais en gardant le format professionnel')">
+          <div class="quick-btn-icon">🌍</div><div class="quick-btn-text">Traduction</div><div class="quick-btn-sub">FR / EN / autres</div>
+        </button>
+        <button class="quick-btn" onclick="quickSend('Analyse ce document et donne-moi les points clés')">
+          <div class="quick-btn-icon">📄</div><div class="quick-btn-text">Analyser document</div><div class="quick-btn-sub">Résumé & insights</div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-toolbar">
+      <button class="toolbar-btn" onclick="quickSend('Rédige un email de suivi client professionnel')">✉️ Email</button>
+      <button class="toolbar-btn" onclick="quickSend('Crée une présentation commerciale slide par slide')">📊 Présentation</button>
+      <button class="toolbar-btn" onclick="quickSend('Traduis en anglais :')">🌍 Traduire</button>
+      <button class="toolbar-btn" onclick="quickSend('Fais-moi un brief du jour')">☀️ Brief</button>
+      <button class="toolbar-btn" onclick="quickSend('Analyse ce document et extrais les points clés :')">📄 Analyser</button>
+    </div>
+    <div class="input-wrapper">
+      <textarea id="userInput" placeholder="Objectif, tâche, question, ou collez un document..." rows="1"
+        onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="mic-btn" id="micBtn" onclick="toggleVoice()" title="Dictée vocale">🎤</button>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">↑</button>
+    </div>
+    <div class="input-hint"><kbd>Enter</kbd> envoyer · <kbd>Shift+Enter</kbd> nouvelle ligne · 🎤 dictée vocale</div>
+  </div>
+</main>
+</div>
+
+<!-- SETUP MODAL -->
+<div class="modal-overlay" id="setupModal">
+  <div class="setup-card">
+    <div class="setup-title">Configurer AIDEN</div>
+    <div class="setup-sub">Entrez votre clé API Anthropic pour activer l'assistant. Elle sera mémorisée.</div>
+    <div class="setup-field">
+      <label class="setup-label">CLÉ API ANTHROPIC</label>
+      <input type="password" class="setup-input" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off"/>
+    </div>
+    <button class="setup-btn" onclick="saveConfig()">Activer AIDEN →</button>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──
+const SUPABASE_URL = 'https://njzrrengzeetkccvzteh.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_WFAOyXLHR8f8oKD6H3SWlw_7M2rq5hK';
+
+// ── STATE ──
+const state = {
+  apiKey: localStorage.getItem('aiden_api_key') || '',
+  userId: localStorage.getItem('aiden_user_id') || generateId(),
+  memory: [],
+  docs: [],
+  activeDocContext: null,
+  history: [],
+  conversations: [],
+  isThinking: false,
+  isRecording: false,
+  supabaseReady: false,
+  recognition: null
+};
+
+function generateId() {
+  const id = 'user_' + Math.random().toString(36).substr(2,9);
+  localStorage.setItem('aiden_user_id', id);
+  return id;
+}
+
+// ── PWA ──
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+// ── THEME ──
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next === 'dark' ? '' : 'light');
+  localStorage.setItem('aiden_theme', next);
+}
+if (localStorage.getItem('aiden_theme') === 'light') document.documentElement.setAttribute('data-theme','light');
+
+// ── TABS ──
+function switchTab(tab) {
+  document.querySelectorAll('.stab').forEach((b,i) => b.classList.toggle('active', ['memory','docs','history','reporting'][i] === tab));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  if (tab === 'reporting') {
+    document.getElementById('tab-reporting').innerHTML = REPORTING.render();
+  }
+}
+
+// ── SUPABASE ──
+async function supaFetch(path, method='GET', body=null) {
+  const opts = {
+    method,
+    headers: {
+      'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': method==='POST' ? 'return=representation' : ''
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, opts);
+  if (!res.ok) throw new Error(await res.text());
+  const text = await res.text();
+  return text ? JSON.parse(text) : [];
+}
+
+async function initSupabase() {
+  try {
+    await loadMemoryFromSupabase();
+    await loadDocsFromSupabase();
+    await loadConversationsFromSupabase();
+    state.supabaseReady = true;
+    updateSyncBadge(true);
+  } catch(e) {
+    console.warn('Supabase init failed:', e);
+    loadMemoryLocal();
+    updateSyncBadge(false);
+  }
+}
+
+// ── API KEY SYNC ──
+async function loadApiKeyFromSupabase() {
+  try {
+    const data = await supaFetch(`/aiden_memory?user_id=eq.${state.userId}&tag=eq.API_KEY&limit=1`);
+    if (data?.[0]) { state.apiKey = data[0].text; localStorage.setItem('aiden_api_key', data[0].text); return data[0].text; }
+  } catch(e) {}
+  return null;
+}
+async function saveApiKeyToSupabase(key) {
+  try {
+    await supaFetch(`/aiden_memory?user_id=eq.${state.userId}&tag=eq.API_KEY`, 'DELETE');
+    await supaFetch('/aiden_memory','POST',{user_id:state.userId,icon:'🔑',text:key,tag:'API_KEY',tag_class:'tag-pref'});
+  } catch(e) {}
+}
+
+// ── MEMORY ──
+async function loadMemoryFromSupabase() {
+  const data = await supaFetch(`/aiden_memory?user_id=eq.${state.userId}&tag=neq.API_KEY&tag=neq.DOC&tag=neq.CONV&order=created_at.asc`);
+  state.memory = data.map(r => ({id:r.id,icon:r.icon||'📌',text:r.text,tag:r.tag||'NOTE',tagClass:r.tag_class||'tag-pref'}));
+  if (state.memory.length === 0) {
+    await saveMemoryToSupabase({icon:'👤',text:'Langue préférée : Français',tag:'PRÉFÉRENCE',tagClass:'tag-pref'});
+    await saveMemoryToSupabase({icon:'🧠',text:'Style : direct, orienté action',tag:'PRÉFÉRENCE',tagClass:'tag-pref'});
+  }
+  renderMemory();
+}
+async function saveMemoryToSupabase(mem) {
+  try {
+    const rows = await supaFetch('/aiden_memory','POST',{user_id:state.userId,icon:mem.icon,text:mem.text,tag:mem.tag,tag_class:mem.tagClass});
+    if (rows?.[0]) { mem.id = rows[0].id; state.memory.push(mem); renderMemory(); }
+  } catch(e) { state.memory.push(mem); saveMemoryLocal(); renderMemory(); }
+}
+async function deleteMemory(id, index) {
+  try { await supaFetch(`/aiden_memory?id=eq.${id}`,'DELETE'); } catch(e) {}
+  state.memory.splice(index,1); saveMemoryLocal(); renderMemory();
+}
+function loadMemoryLocal() {
+  const s = localStorage.getItem('aiden_memory');
+  state.memory = s ? JSON.parse(s) : [{icon:'👤',text:'Langue préférée : Français',tag:'PRÉFÉRENCE',tagClass:'tag-pref'}];
+}
+function saveMemoryLocal() { localStorage.setItem('aiden_memory', JSON.stringify(state.memory)); }
+
+function renderMemory() {
+  const list = document.getElementById('memoryList');
+  list.innerHTML = '';
+  state.memory.forEach((m,i) => {
+    const div = document.createElement('div');
+    div.className = 'memory-item';
+    div.innerHTML = `<span class="memory-icon">${m.icon}</span><div class="memory-content">${escapeHTML(m.text)}<div><span class="memory-tag ${m.tagClass}">${m.tag}</span></div></div>`;
+    div.addEventListener('contextmenu', e => { e.preventDefault(); if(confirm('Supprimer ?')) deleteMemory(m.id, i); });
+    let lt; div.addEventListener('touchstart',()=>{lt=setTimeout(()=>{if(confirm('Supprimer ?')) deleteMemory(m.id,i);},700)});
+    div.addEventListener('touchend',()=>clearTimeout(lt));
+    list.appendChild(div);
+  });
+}
+async function promptAddMemory() {
+  const text = prompt('Que souhaitez-vous mémoriser ?');
+  if (!text) return;
+  const mem = {icon:'📌',text,tag:'MANUEL',tagClass:'tag-pref'};
+  if (state.supabaseReady) await saveMemoryToSupabase(mem);
+  else { state.memory.push(mem); saveMemoryLocal(); renderMemory(); }
+}
+
+// ── DOCUMENTS ──
+async function loadDocsFromSupabase() {
+  const data = await supaFetch(`/aiden_memory?user_id=eq.${state.userId}&tag=eq.DOC&order=created_at.desc`);
+  state.docs = data.map(r => ({id:r.id,name:r.icon,content:r.text,meta:r.tag_class}));
+  renderDocs();
+}
+
+function getDocIcon(name) {
+  if (name.match(/\.pdf$/i)) return '📕';
+  if (name.match(/\.docx?$/i)) return '📘';
+  if (name.match(/\.xlsx?$/i)) return '📗';
+  if (name.match(/\.csv$/i)) return '📊';
+  return '📄';
+}
+
+async function handleFileUpload(event) {
+  const files = Array.from(event.target.files);
+  if (!files.length) return;
+  const progress = document.getElementById('uploadProgress');
+  progress.style.display = 'block';
+
+  for (const file of files) {
+    progress.textContent = `⏳ Lecture de ${file.name}...`;
+    try {
+      const content = await readFile(file);
+      const truncated = content.slice(0, 15000); // max ~15k chars per doc
+      const meta = `${getDocIcon(file.name)} · ${(file.size/1024).toFixed(0)}KB`;
+
+      if (state.supabaseReady) {
+        const rows = await supaFetch('/aiden_memory','POST',{
+          user_id:state.userId, icon:file.name, text:truncated, tag:'DOC', tag_class:meta
+        });
+        if (rows?.[0]) state.docs.unshift({id:rows[0].id,name:file.name,content:truncated,meta});
+      } else {
+        state.docs.unshift({name:file.name,content:truncated,meta});
+      }
+      renderDocs();
+    } catch(e) {
+      console.error('File error:', e);
+    }
+  }
+
+  progress.style.display = 'none';
+  event.target.value = '';
+}
+
+async function readFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    if (file.name.match(/\.(txt|csv|html|md)$/i)) {
+      reader.onload = e => resolve(e.target.result);
+      reader.onerror = reject;
+      reader.readAsText(file);
+    } else {
+      // For PDF/Word/Excel — read as text best-effort
+      reader.onload = e => {
+        const arr = new Uint8Array(e.target.result);
+        let text = '';
+        // Extract readable text from binary
+        for (let i = 0; i < arr.length; i++) {
+          const c = arr[i];
+          if (c >= 32 && c < 127) text += String.fromCharCode(c);
+          else if (c === 10 || c === 13) text += '\n';
+        }
+        // Clean up — keep only lines with real content
+        const lines = text.split('\n').filter(l => l.trim().length > 3 && /[a-zA-ZÀ-ÿ]{3,}/.test(l));
+        resolve(lines.join('\n').slice(0, 15000) || `[Fichier: ${file.name} — contenu binaire non extractible directement. Copiez-collez le texte.]`);
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    }
+  });
+}
+
+function renderDocs() {
+  const list = document.getElementById('docsList');
+  list.innerHTML = '';
+  if (state.docs.length === 0) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;font-size:12px;color:var(--muted)">Aucun document.<br>Ajoutez PDF, Word, Excel...</div>';
+    return;
+  }
+  state.docs.forEach((doc, i) => {
+    const div = document.createElement('div');
+    div.className = 'doc-item';
+    div.innerHTML = `
+      <span class="doc-icon">${getDocIcon(doc.name)}</span>
+      <div class="doc-info">
+        <div class="doc-name" title="${escapeHTML(doc.name)}">${escapeHTML(doc.name)}</div>
+        <div class="doc-meta">${doc.meta}</div>
+      </div>
+      <button class="doc-del" onclick="useDoc(${i})" title="Utiliser dans le chat">💬</button>
+      <button class="doc-del" onclick="deleteDoc('${doc.id}',${i})" title="Supprimer">✕</button>`;
+    list.appendChild(div);
+  });
+}
+
+function useDoc(index) {
+  const doc = state.docs[index];
+  state.activeDocContext = doc;
+  const bar = document.getElementById('docContextBar');
+  document.getElementById('docContextText').textContent = `📄 ${doc.name} — actif dans le contexte`;
+  bar.classList.add('active');
+  document.getElementById('userInput').focus();
+  if (window.innerWidth <= 680) closeSidebar();
+}
+
+function clearDocContext() {
+  state.activeDocContext = null;
+  document.getElementById('docContextBar').classList.remove('active');
+}
+
+async function deleteDoc(id, index) {
+  if (!confirm('Supprimer ce document ?')) return;
+  if (id && state.supabaseReady) {
+    try { await supaFetch(`/aiden_memory?id=eq.${id}`,'DELETE'); } catch(e) {}
+  }
+  state.docs.splice(index,1);
+  renderDocs();
+  if (state.activeDocContext && state.activeDocContext === state.docs[index]) clearDocContext();
+}
+
+// ── CONVERSATIONS ──
+async function loadConversationsFromSupabase() {
+  try {
+    const data = await supaFetch(`/aiden_memory?user_id=eq.${state.userId}&tag=eq.CONV&order=created_at.desc&limit=20`);
+    state.conversations = data.map(r => ({id:r.id,title:r.icon,messages:JSON.parse(r.text),date:r.tag_class}));
+    renderHistory();
+  } catch(e) {}
+}
+
+async function saveConversation() {
+  if (state.history.length < 2) return;
+  const firstUserMsg = state.history.find(m => m.role==='user')?.content || 'Conversation';
+  const title = firstUserMsg.slice(0,50) + (firstUserMsg.length > 50 ? '...' : '');
+  const date = new Date().toLocaleDateString('fr-FR');
+  try {
+    await supaFetch('/aiden_memory','POST',{
+      user_id:state.userId, icon:title, text:JSON.stringify(state.history.slice(-20)),
+      tag:'CONV', tag_class:date
+    });
+    await loadConversationsFromSupabase();
+  } catch(e) {}
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  list.innerHTML = '';
+  if (state.conversations.length === 0) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;font-size:12px;color:var(--muted)">Aucune conversation sauvegardée.</div>';
+    return;
+  }
+  state.conversations.forEach(conv => {
+    const div = document.createElement('div');
+    div.className = 'history-item';
+    div.innerHTML = `<div class="history-title">${escapeHTML(conv.title)}</div><div class="history-date">${conv.date}</div>`;
+    div.onclick = () => loadConversation(conv);
+    list.appendChild(div);
+  });
+}
+
+function loadConversation(conv) {
+  state.history = conv.messages;
+  hideWelcome();
+  const area = document.getElementById('chatArea');
+  area.innerHTML = '';
+  conv.messages.forEach(m => appendMessage(m.role, m.content));
+  if (window.innerWidth <= 680) closeSidebar();
+}
+
+async function clearHistory() {
+  if (!confirm('Effacer tout l\'historique ?')) return;
+  try {
+    await supaFetch(`/aiden_memory?user_id=eq.${state.userId}&tag=eq.CONV`,'DELETE');
+  } catch(e) {}
+  state.conversations = [];
+  renderHistory();
+}
+
+// ── VOICE ──
+function toggleVoice() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    alert('Dictée vocale non supportée sur ce navigateur. Utilisez Safari sur iPhone.');
+    return;
+  }
+  if (state.isRecording) {
+    state.recognition?.stop();
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  state.recognition = new SR();
+  state.recognition.lang = 'fr-FR';
+  state.recognition.continuous = false;
+  state.recognition.interimResults = false;
+  state.recognition.onstart = () => {
+    state.isRecording = true;
+    document.getElementById('micBtn').classList.add('recording');
+    document.getElementById('micBtn').textContent = '⏹';
+  };
+  state.recognition.onresult = e => {
+    const transcript = e.results[0][0].transcript;
+    document.getElementById('userInput').value += transcript;
+    autoResize(document.getElementById('userInput'));
+  };
+  state.recognition.onend = () => {
+    state.isRecording = false;
+    document.getElementById('micBtn').classList.remove('recording');
+    document.getElementById('micBtn').textContent = '🎤';
+  };
+  state.recognition.onerror = () => {
+    state.isRecording = false;
+    document.getElementById('micBtn').classList.remove('recording');
+    document.getElementById('micBtn').textContent = '🎤';
+  };
+  state.recognition.start();
+}
+
+// ── PIPELINE ──
+const PIPES = ['pipe-input','pipe-intent','pipe-memory','pipe-plan','pipe-tools','pipe-exec','pipe-output'];
+function resetPipeline() { PIPES.forEach(id => document.getElementById(id).classList.remove('active','done')); }
+async function animatePipeline() {
+  resetPipeline();
+  for (let i=0; i<PIPES.length; i++) {
+    await new Promise(r=>setTimeout(r,300));
+    if (i>0) { document.getElementById(PIPES[i-1]).classList.remove('active'); document.getElementById(PIPES[i-1]).classList.add('done'); }
+    document.getElementById(PIPES[i]).classList.add('active');
+  }
+}
+function completePipeline() { PIPES.forEach(id => { document.getElementById(id).classList.remove('active'); document.getElementById(id).classList.add('done'); }); }
+
+// ── SYSTEM PROMPT ──
+function buildSystemPrompt() {
+  const memText = state.memory.map(m => `- ${m.text} [${m.tag}]`).join('\n');
+  const docText = state.activeDocContext ? `\n\n## DOCUMENT ACTIF\nNom: ${state.activeDocContext.name}\nContenu:\n${state.activeDocContext.content}` : '';
+  const docsIndex = state.docs.length > 0 ? `\n\n## BASE DE CONNAISSANCES (${state.docs.length} docs)\n${state.docs.map(d=>`- ${d.name}`).join('\n')}` : '';
+
+  return `Tu es AIDEN v2, assistant personnel exécutif avancé d'Abou-bakr Habib Lamana, Sales Manager France chez Hytera Europe.
+
+## PROFIL UTILISATEUR
+- Nom : Abou-bakr Habib Lamana
+- Poste : Sales Manager France — Hytera Europe
+- Secteur : Radio professionnelle PTT / communications critiques / TETRA / DMR
+- Clients : Sécurité publique (police, gendarmerie, pompiers), Transport & logistique, Industrie & énergie
+- Actions : Prospection, suivi/renouvellement, réponse appels d'offres
+- Langues : Français (principal) + Anglais
+- Concurrents : Motorola Solutions, Sepura, Kenwood, Tait Communications
+- Produits phares : Radios DMR, TETRA, PoC (Push-to-Talk over Cellular), systèmes dispatch
+
+## MÉMOIRE ACTIVE
+${memText || '(vide)'}
+${docsIndex}${docText}
+
+## CONTEXTE MARCHÉ HYTERA
+- Hytera : n°2 mondial radio professionnelle
+- Avantages : rapport qualité/prix, interopérabilité DMR/TETRA, couverture indoor, durabilité
+- Sécurité publique : conformité ETSI, chiffrement AES256, fiabilité mission-critique
+- Transport : couverture tunnel/entrepôt, GPS intégré, longue autonomie
+- Industrie : ATEX disponible, IP67/IP68, gestion de flotte centralisée
+
+## TEMPLATES OPÉRATIONNELS
+
+### EMAIL PROSPECTION (FR)
+Objet : [Bénéfice concret] — Hytera Europe
+Structure : Accroche sectorielle → problème identifié → solution Hytera → preuve → CTA précis (date/heure)
+Règle : Max 150 mots. Toujours proposer 2 versions : percutante / prudente.
+
+### EMAIL PROSPECTION (EN)
+Subject: [Specific benefit] — Hytera Europe
+Structure: Industry hook → challenge → Hytera solution → proof point → clear CTA
+Rule: Max 150 words. Always propose 2 versions: direct / softer.
+
+### EMAIL SUIVI CLIENT
+Objet : Suite à notre échange — [Action concrète]
+Structure : Référence échange → engagement pris → prochaine étape → deadline précise
+Règle : Toujours proposer une date concrète pour la prochaine action.
+
+### EMAIL RELANCE (prospect silencieux)
+Objet : Une question rapide, [Prénom]
+Structure : Très bref, sans reproche. Nouvelle valeur + question fermée simple.
+
+### PROPOSITION COMMERCIALE
+1. Contexte & enjeux client (montrer qu'on comprend leur problème)
+2. Solution recommandée (modèles + justification)
+3. Différenciation vs concurrence (factuelle, sans dénigrement)
+4. Références sectorielles
+5. Investissement & ROI estimé
+6. Conditions & délais
+7. Prochaines étapes
+
+### COMPTE-RENDU RÉUNION
+Structure : Date/Participants → Contexte → Points discutés → Décisions → Actions (qui/quoi/quand) → Prochaine réunion
+Format : Bullet points, max 1 page, 100% actionnable
+
+### QBR TRIMESTRIEL
+Structure : Performance vs objectifs Q-1 → Pipeline actuel → Top opportunités Q → Risques → Plan d'action → Support requis
+
+### PRÉSENTATION COMMERCIALE (slide par slide)
+S1: Titre + accroche chiffrée
+S2: Enjeux client (leur problème, pas nos produits)
+S3: Positionnement Hytera
+S4-S6: Solution proposée (produits + architecture)
+S7: Références clients secteur
+S8: ROI / bénéfices concrets
+S9: Timeline et prochaines étapes
+S10: Contact + CTA
+
+### RÉPONSE APPEL D'OFFRES
+Checklist : Analyse CDC (exigences, délais, critères) → Conformité technique point par point → Argumentaire différenciant → Références pertinentes → Pricing stratégique → Plan déploiement et support
+
+## COMPORTEMENT
+- Quand tu rédiges un email : TOUJOURS 2 versions (percutante / prudente)
+- Quand tu traduis : adapte les expressions idiomatiques, pas mot à mot
+- Quand tu analyses un doc : commence par les 3 points les plus importants
+- Anticipe les prochaines étapes logiques
+- Ne commence JAMAIS par être d'accord
+
+## STYLE DE RÉDACTION — COPIER EXACTEMENT
+Quand tu rédiges des emails ou textes POUR Abou-bakr, tu écris EXACTEMENT comme lui :
+
+RÈGLES ABSOLUES :
+- Phrases courtes, directes, sans introduction creuse
+- Pas de bullet points, pas de gras, pas de titres — texte simple
+- Ouverture : "Bonjour [Prénom]," ou "Chers partenaires," — jamais "J'espère que vous allez bien"
+- Corps : va à l'essentiel dès la première phrase, explique le contexte si nécessaire sans sur-expliquer
+- Anticipe les connexions utiles ("je rajoute en cc [Prénom] pour vos futures demandes")
+- Clôture INVARIABLE : "Cordialement / Best regards"
+- Signature INVARIABLE :
+  Abou-bakr Habib LAMANA
+  Sales Manager France
+  Mail: abou-bakr.lamana@hytera-europe.com
+  Tel: +33659695275 / +33630245314
+
+CE QU'IL NE FAIT JAMAIS :
+- "J'espère que ce message vous trouve en bonne santé"
+- "N'hésitez pas à me contacter"
+- "Je reste à votre disposition" (sauf très occasionnellement)
+- Listes à puces dans les emails
+- Formules alambiquées
+
+EXEMPLES DE SON STYLE :
+Email court : "Bonjour Romain, Je vous remercie pour cette demande. Vous trouverez ci-joint le prix public de la batterie, vous pourrez directement passer commande depuis le purchase portal."
+Email groupe : "Chers partenaires, Veuillez trouver ci-joint les packs démos 2026 réservés aux partenaires directs."
+Email suivi : "Bonjour Adrien, J'accuse bonne réception et vous en remercie. Je rajoute dans la boucle Arthur Chen notre chef de produit."
+
+## STYLE CONSEIL/ANALYSE (pour ses propres réponses AIDEN)
+- [Certain] / [Probable] / [Hypothèse] avant chaque affirmation
+- Vérité inconfortable en premier si nécessaire
+- Direct, sans jargon inutile
+- JAMAIS : "Excellente question", "Absolument", "Certainement"
+
+## FORMAT
+Tâches simples → réponse directe Markdown
+Tâches complexes → JSON STRICT :
+{"type":"structured","objectif":"...","plan":["..."],"execution":"...","resultat":"...","prochaines_etapes":["..."],"memoriser":{"should":true,"text":"...","icon":"...","tag":"PROJET|PRÉFÉRENCE|HABITUDE","tagClass":"tag-proj|tag-pref|tag-habit"}}
+
+Réponds en français sauf demande explicite d'une autre langue.`;
+}
+
+// ── SEND ──
+async function sendMessage() {
+  const input = document.getElementById('userInput');
+  const text = input.value.trim();
+  if (!text || state.isThinking) return;
+  if (!state.apiKey) { document.getElementById('setupModal').classList.add('open'); return; }
+
+  hideWelcome();
+  input.value = ''; autoResize(input);
+  state.isThinking = true;
+  document.getElementById('sendBtn').disabled = true;
+  if (window.innerWidth <= 680) closeSidebar();
+
+  appendMessage('user', text);
+  const thinking = showThinking();
+  animatePipeline();
+  state.history.push({role:'user',content:text});
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':state.apiKey,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:2000,
+        system:buildSystemPrompt(),
+        messages:state.history
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+
+    const raw = data.content[0].text;
+    state.history.push({role:'assistant',content:raw});
+    removeThinking(thinking);
+    completePipeline();
+
+    // Auto-save conversation every 4 exchanges
+    if (state.history.length % 8 === 0) saveConversation();
+
+    try {
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        if (parsed.type === 'structured') {
+          renderStructured(parsed);
+          if (parsed.memoriser?.should) offerMemory(parsed.memoriser);
+          return;
+        }
+      }
+    } catch {}
+    appendMessage('assistant', raw);
+
+  } catch(err) {
+    removeThinking(thinking);
+    resetPipeline();
+    appendMessage('assistant', `**Erreur.** ${err.message}`);
+  }
+
+  state.isThinking = false;
+  document.getElementById('sendBtn').disabled = false;
+  input.focus();
+}
+
+// ── RENDER ──
+function hideWelcome() { document.getElementById('welcomeScreen')?.remove(); }
+
+function appendMessage(role, content, isHTML=false) {
+  const area = document.getElementById('chatArea');
+  const time = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `<div class="msg-avatar">${role==='user'?'✦':'A'}</div><div class="msg-body"><div class="msg-meta">${role==='user'?'Vous':'AIDEN'} · ${time}</div><div class="msg-bubble">${isHTML?content:escapeAndFormat(content)}</div></div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function showThinking() {
+  const area = document.getElementById('chatArea');
+  const steps = ['Analyse intention','Consultation mémoire','Construction plan','Exécution'];
+  const div = document.createElement('div');
+  div.className = 'thinking'; div.id = 'thinkingEl';
+  div.innerHTML = `<div class="thinking-avatar">A</div><div class="thinking-content"><div class="thinking-steps">${steps.map((s,i)=>`<div class="thinking-step" id="ts${i}"><div class="step-icon">◐</div><span>${s}</span></div>`).join('')}</div></div>`;
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+  let i=0;
+  const interval = setInterval(()=>{
+    if(i>0){const p=document.getElementById(`ts${i-1}`);if(p){p.classList.remove('active');p.classList.add('done');p.querySelector('.step-icon').textContent='✓';}}
+    if(i<steps.length){const c=document.getElementById(`ts${i}`);if(c)c.classList.add('active');i++;}
+    else clearInterval(interval);
+  },500);
+  return {div,interval};
+}
+
+function removeThinking(ref) { if(ref){clearInterval(ref.interval);ref.div.remove();} }
+
+function renderStructured(data) {
+  const area = document.getElementById('chatArea');
+  const time = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  const planHTML = (data.plan||[]).map((p,i)=>`<li class="plan-item"><span class="plan-num">${String(i+1).padStart(2,'0')}</span><span>${escapeAndFormat(p)}</span></li>`).join('');
+  const nextHTML = (data.prochaines_etapes||[]).map(n=>`<div class="next-item">${escapeAndFormat(n)}</div>`).join('');
+  const div = document.createElement('div');
+  div.className = 'msg assistant';
+  div.innerHTML = `<div class="msg-avatar">A</div><div class="msg-body" style="max-width:calc(100% - 40px)"><div class="msg-meta">AIDEN · ${time}</div><div class="structured-block">
+    ${data.objectif?`<div class="block-section"><div class="block-label objective">OBJECTIF</div><div class="block-content">${escapeAndFormat(data.objectif)}</div></div>`:''}
+    ${planHTML?`<div class="block-section"><div class="block-label plan">PLAN</div><ul class="plan-items">${planHTML}</ul></div>`:''}
+    ${data.execution?`<div class="block-section"><div class="block-label execution">EXÉCUTION</div><div class="block-content">${escapeAndFormat(data.execution)}</div></div>`:''}
+    ${data.resultat?`<div class="block-section"><div class="block-label result">RÉSULTAT</div><div class="block-content">${escapeAndFormat(data.resultat)}</div></div>`:''}
+    ${nextHTML?`<div class="block-section"><div class="block-label next">PROCHAINES ÉTAPES</div><div class="next-items">${nextHTML}</div></div>`:''}
+  </div></div>`;
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+
+function offerMemory(mem) {
+  const area = document.getElementById('chatArea');
+  const id = 'mo_'+Date.now();
+  const div = document.createElement('div');
+  div.className = 'memory-prompt'; div.id = id;
+  div.innerHTML = `<span>💾</span><span>Mémoriser : "${escapeHTML(mem.text)}"</span><div class="memory-prompt-btns"><button class="mp-btn yes" onclick="acceptMemory('${id}',${JSON.stringify(JSON.stringify(mem))})">Oui</button><button class="mp-btn no" onclick="document.getElementById('${id}').remove()">Non</button></div>`;
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
+}
+
+async function acceptMemory(elId, memStr) {
+  document.getElementById(elId)?.remove();
+  const mem = JSON.parse(memStr);
+  if (state.supabaseReady) await saveMemoryToSupabase(mem);
+  else { state.memory.push(mem); saveMemoryLocal(); renderMemory(); }
+}
+
+// ── SETUP ──
+function saveConfig() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key.startsWith('sk-')) { alert('Clé invalide (doit commencer par sk-)'); return; }
+  state.apiKey = key;
+  localStorage.setItem('aiden_api_key', key);
+  if (state.supabaseReady) saveApiKeyToSupabase(key);
+  document.getElementById('setupModal').classList.remove('open');
+}
+
+function updateSyncBadge(synced) {
+  const b = document.getElementById('syncBadge'), s = document.getElementById('syncStatus');
+  if (synced) { b.textContent='SYNC ☁'; b.style.color='var(--blue)'; if(s)s.textContent='SYNC'; }
+  else { b.textContent='LOCAL'; b.style.color='var(--muted)'; if(s)s.textContent='LOCAL'; }
+}
+
+// ── UTILS ──
+function escapeHTML(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escapeAndFormat(text) {
+  let t = escapeHTML(text)
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/`(.*?)`/g,'<code style="font-family:DM Mono,monospace;font-size:12px;background:var(--surface2);padding:1px 5px;border-radius:3px;color:var(--accent)">$1</code>')
+    .replace(/\n/g,'<br>');
+  t = t.replace(/\[Certain\]/g,'<span class="confidence-badge conf-certain">CERTAIN</span>');
+  t = t.replace(/\[Probable\]/g,'<span class="confidence-badge conf-probable">PROBABLE</span>');
+  t = t.replace(/\[Hypothèse\]/g,'<span class="confidence-badge conf-hypothesis">HYPOTHÈSE</span>');
+  return t;
+}
+function quickSend(text) { document.getElementById('userInput').value = text; sendMessage(); }
+function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} }
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px'; }
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('open'); }
+function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
+
+// ── INIT ──
+async function init() {
+  await initSupabase();
+  if (!state.apiKey && state.supabaseReady) await loadApiKeyFromSupabase();
+  if (!state.apiKey) document.getElementById('setupModal').classList.add('open');
+  await REPORTING.init(supaFetch, state.userId);
+}
+
+// ── REPORTING JS ──
+// ── AIDEN REPORTING MODULE ──
+// Clients from CBU Forecast + Project List
+
+const REPORTING = {
+
+  // ── DEFAULT CLIENTS (from real files) ──
+  defaultClients: [
+    { id: 'energia', name: 'EU-ENERGIA Distribution SAS', type: 'Revendeur Pro', country: 'France' },
+    { id: 'sysoco', name: 'EU-Sysoco EUR', type: 'Revendeur Pro', country: 'France' },
+    { id: 'orbitics', name: 'EU-Orbitics SAS', type: 'Revendeur Pro', country: 'France' },
+    { id: 'tessa', name: 'EU-TESSA', type: 'Revendeur Pro', country: 'France' },
+    { id: 'strategic', name: 'EU-Strategic Telecom', type: 'Revendeur Pro', country: 'France' },
+    { id: 'aboutnet', name: 'EU-ABOUT-NETWORK', type: 'Revendeur Pro', country: 'France' },
+    { id: 'audiotech', name: 'AUDIOTECH', type: 'Revendeur Pro', country: 'France' },
+    { id: 'executive', name: 'EU-The Executive Distribution', type: 'Distribution', country: 'France' },
+    { id: 'fibrelec', name: 'EU-SAS FIBRELEC (Sysoco Pacific)', type: 'Revendeur Pro', country: 'France' },
+    { id: 'tedex', name: 'TEDEX', type: 'Revendeur Pro', country: 'France' },
+    { id: 'axians', name: 'AXIANS', type: 'Intégrateur', country: 'France' },
+    { id: 'orange', name: 'ORANGE', type: 'Opérateur', country: 'France' },
+  ],
+
+  // ── DEFAULT PROJECTS (from Project List) ──
+  defaultProjects: [
+    { id: 'p1', partner: 'ENERGIA', name: 'NICE TIER 3', category: 'PUBLIC SAFETY', scope: 'CUBES BASE STATIONS & INFRASTRUCTURE', value: 150000, probability: 0.8, delivery: 'Q3', competitor: 'KENWOOD', status: 'ONGOING', progress: 'OFFER MADE, AWAITING BUDGET APPROVAL' },
+    { id: 'p2', partner: 'ENERGIA', name: 'NICE MUNICIPAL POLICE INFRA', category: 'PUBLIC SAFETY', scope: 'REDUNDANT HYTALK, SMARTONE, MRPS', value: 90000, probability: 0.8, delivery: 'Q3', competitor: '', status: 'ONGOING', progress: 'OFFER MADE, AWAITING BUDGET APPROVAL' },
+    { id: 'p3', partner: 'ENERGIA', name: 'NICE MUNICIPAL POLICE DEVICES', category: 'PUBLIC SAFETY', scope: 'PDC690, HP7, P50', value: 500000, probability: 0.8, delivery: 'Q4', competitor: 'KENWOOD', status: 'ONGOING', progress: 'OFFER MADE, AWAITING BUDGET APPROVAL' },
+    { id: 'p4', partner: 'ENERGIA', name: 'NICE ICC', category: 'PUBLIC SAFETY', scope: 'ICC COMMAND AND CONTROL', value: 800000, probability: 0.7, delivery: 'Q4', competitor: 'COMMEND', status: 'ONGOING', progress: 'OFFER MADE, POC TO BE DELIVERED IN JULY' },
+    { id: 'p5', partner: 'TEDEX', name: 'LTE P50', category: 'PRIVATE', scope: 'SUPPLY OF 1000 P50 AND HYTALK SERVER', value: 150000, probability: 0.7, delivery: 'Q4', competitor: '', status: 'LIVE', progress: 'First batch 500 pcs delivered, awaiting customer budget' },
+    { id: 'p6', partner: 'AXIANS', name: 'PDC690 AIR FRANCE', category: 'PRIVATE', scope: 'PDC690 FOR AIRFRANCE AIRPORTS GROUND STAFFS + DMR REPEATERS', value: 500000, probability: 0.6, delivery: 'Q4', competitor: 'MOTOROLA', status: 'PENDING', progress: 'END USER TESTED PDC690, COMPLIES, AWAITING MANAGEMENT GREEN LIGHT' },
+    { id: 'p7', partner: 'ORANGE', name: 'P70 RATP TENDER', category: 'PRIVATE', scope: 'SUPPLY OF P70 DEVICES TO RATP', value: 6000000, probability: 0.5, delivery: 'Q5', competitor: 'CROSSCALL', status: 'PENDING', progress: 'ONGOING DISCUSSIONS WITH ORANGE, TENDER END 2026' },
+  ],
+
+  // ── STATE ──
+  state: {
+    clients: [],
+    projects: [],
+    monthly: {}, // { 'YYYY-MM': { clientId: { secured, objective, orders, pipeline, comment } } }
+    currentMonth: new Date().toISOString().slice(0, 7)
+  },
+
+  // ── INIT ──
+  async init(supaFetch, userId) {
+    this.supaFetch = supaFetch;
+    this.userId = userId;
+    await this.load();
+  },
+
+  async load() {
+    try {
+      const data = await this.supaFetch(`/aiden_memory?user_id=eq.${this.userId}&tag=eq.REPORTING&limit=1`);
+      if (data?.[0]) {
+        const saved = JSON.parse(data[0].text);
+        this.state.clients = saved.clients || this.defaultClients;
+        this.state.projects = saved.projects || this.defaultProjects;
+        this.state.monthly = saved.monthly || {};
+        this.savedId = data[0].id;
+      } else {
+        this.state.clients = [...this.defaultClients];
+        this.state.projects = [...this.defaultProjects];
+        this.state.monthly = {};
+      }
+    } catch(e) {
+      this.state.clients = [...this.defaultClients];
+      this.state.projects = [...this.defaultProjects];
+    }
+  },
+
+  async save() {
+    const payload = {
+      clients: this.state.clients,
+      projects: this.state.projects,
+      monthly: this.state.monthly
+    };
+    try {
+      if (this.savedId) {
+        await this.supaFetch(`/aiden_memory?id=eq.${this.savedId}`, 'DELETE');
+      }
+      const rows = await this.supaFetch('/aiden_memory', 'POST', {
+        user_id: this.userId,
+        icon: 'REPORTING_DATA',
+        text: JSON.stringify(payload),
+        tag: 'REPORTING',
+        tag_class: new Date().toISOString()
+      });
+      if (rows?.[0]) this.savedId = rows[0].id;
+    } catch(e) { console.warn('Save reporting failed', e); }
+  },
+
+  // ── GET/SET MONTHLY DATA ──
+  getMonthData(month) {
+    if (!this.state.monthly[month]) this.state.monthly[month] = {};
+    return this.state.monthly[month];
+  },
+
+  setClientData(month, clientId, data) {
+    if (!this.state.monthly[month]) this.state.monthly[month] = {};
+    this.state.monthly[month][clientId] = { ...this.getClientData(month, clientId), ...data };
+  },
+
+  getClientData(month, clientId) {
+    return this.state.monthly[month]?.[clientId] || { secured: 0, objective: 0, orders: 0, pipeline: 0, comment: '' };
+  },
+
+  // ── TOTALS ──
+  getMonthTotals(month) {
+    const data = this.state.monthly[month] || {};
+    let totalSecured = 0, totalObjective = 0, totalOrders = 0, totalPipeline = 0;
+    this.state.clients.forEach(c => {
+      const d = data[c.id] || {};
+      totalSecured += Number(d.secured || 0);
+      totalObjective += Number(d.objective || 0);
+      totalOrders += Number(d.orders || 0);
+      totalPipeline += Number(d.pipeline || 0);
+    });
+    return { totalSecured, totalObjective, totalOrders, totalPipeline };
+  },
+
+  // ── PIPELINE WEIGHTED ──
+  getWeightedPipeline() {
+    return this.state.projects.reduce((sum, p) => sum + (p.value * p.probability), 0);
+  },
+
+  getPipelineByStatus(status) {
+    return this.state.projects.filter(p => p.status === status);
+  },
+
+  // ── RENDER REPORTING TAB ──
+  render() {
+    const months = this.getMonthOptions();
+    const m = this.state.currentMonth;
+    const totals = this.getMonthTotals(m);
+    const weightedPipeline = this.getWeightedPipeline();
+
+    return `
+<div class="rep-container">
+  <!-- HEADER -->
+  <div class="rep-header">
+    <div class="rep-title">📊 Reporting Commercial</div>
+    <div class="rep-controls">
+      <select class="rep-select" id="repMonth" onchange="REPORTING.changeMonth(this.value)">
+        ${months.map(mo => `<option value="${mo.value}" ${mo.value === m ? 'selected' : ''}>${mo.label}</option>`).join('')}
+      </select>
+      <button class="rep-btn rep-btn-primary" onclick="REPORTING.exportExcel()">⬇ Export Excel</button>
+      <button class="rep-btn" onclick="REPORTING.generateAIReport()">🤖 Rapport IA</button>
+    </div>
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="rep-kpis">
+    <div class="rep-kpi">
+      <div class="rep-kpi-label">CA SÉCURISÉ</div>
+      <div class="rep-kpi-value">${this.formatEur(totals.totalSecured)}</div>
+      ${totals.totalObjective > 0 ? `<div class="rep-kpi-sub">${Math.round(totals.totalSecured/totals.totalObjective*100)}% objectif</div>` : ''}
+    </div>
+    <div class="rep-kpi">
+      <div class="rep-kpi-label">OBJECTIF MOIS</div>
+      <div class="rep-kpi-value">${this.formatEur(totals.totalObjective)}</div>
+      <div class="rep-kpi-sub">GAP : ${this.formatEur(totals.totalObjective - totals.totalSecured)}</div>
+    </div>
+    <div class="rep-kpi">
+      <div class="rep-kpi-label">COMMANDES</div>
+      <div class="rep-kpi-value">${totals.totalOrders}</div>
+      <div class="rep-kpi-sub">lignes du mois</div>
+    </div>
+    <div class="rep-kpi">
+      <div class="rep-kpi-label">PIPELINE PONDÉRÉ</div>
+      <div class="rep-kpi-value">${this.formatEur(weightedPipeline)}</div>
+      <div class="rep-kpi-sub">${this.state.projects.length} projets actifs</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="rep-tabs">
+    <button class="rep-tab active" onclick="REPORTING.showRepTab('clients', this)">CLIENTS</button>
+    <button class="rep-tab" onclick="REPORTING.showRepTab('projects', this)">PROJETS</button>
+  </div>
+
+  <!-- CLIENTS TABLE -->
+  <div class="rep-tab-content" id="reptab-clients">
+    <div class="rep-table-wrap">
+      <table class="rep-table">
+        <thead>
+          <tr>
+            <th>CLIENT</th>
+            <th>OBJECTIF (€)</th>
+            <th>CA SÉCURISÉ (€)</th>
+            <th>% OBJ</th>
+            <th>COMMANDES</th>
+            <th>PIPELINE (€)</th>
+            <th>COMMENTAIRE</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="repClientsBody">
+          ${this.renderClientsRows(m)}
+        </tbody>
+        <tfoot>
+          <tr class="rep-total-row">
+            <td><strong>TOTAL</strong></td>
+            <td><strong>${this.formatEur(totals.totalObjective)}</strong></td>
+            <td><strong>${this.formatEur(totals.totalSecured)}</strong></td>
+            <td><strong>${totals.totalObjective > 0 ? Math.round(totals.totalSecured/totals.totalObjective*100)+'%' : '-'}</strong></td>
+            <td><strong>${totals.totalOrders}</strong></td>
+            <td><strong>${this.formatEur(totals.totalPipeline)}</strong></td>
+            <td></td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <button class="rep-add-btn" onclick="REPORTING.addClient()">＋ Ajouter client</button>
+  </div>
+
+  <!-- PROJECTS TABLE -->
+  <div class="rep-tab-content" id="reptab-projects" style="display:none">
+    <div class="rep-table-wrap">
+      <table class="rep-table">
+        <thead>
+          <tr>
+            <th>PARTENAIRE</th>
+            <th>PROJET</th>
+            <th>CATÉGORIE</th>
+            <th>VALEUR (€)</th>
+            <th>PROBA</th>
+            <th>PONDÉRÉ (€)</th>
+            <th>LIVRAISON</th>
+            <th>CONCURRENT</th>
+            <th>STATUT</th>
+            <th>PROGRESSION</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${this.renderProjectsRows()}
+        </tbody>
+      </table>
+    </div>
+    <button class="rep-add-btn" onclick="REPORTING.addProject()">＋ Ajouter projet</button>
+  </div>
+</div>`;
+  },
+
+  renderClientsRows(month) {
+    return this.state.clients.map((c, i) => {
+      const d = this.getClientData(month, c.id);
+      const pct = d.objective > 0 ? Math.round(d.secured / d.objective * 100) : 0;
+      const pctColor = pct >= 100 ? 'var(--green)' : pct >= 70 ? 'var(--yellow)' : 'var(--red)';
+      return `<tr>
+        <td><div class="rep-client-name">${c.name}</div><div class="rep-client-type">${c.type}</div></td>
+        <td><input class="rep-input" type="number" value="${d.objective||''}" placeholder="0" onchange="REPORTING.updateClient('${month}','${c.id}','objective',this.value)"></td>
+        <td><input class="rep-input" type="number" value="${d.secured||''}" placeholder="0" onchange="REPORTING.updateClient('${month}','${c.id}','secured',this.value)"></td>
+        <td><span style="color:${pctColor};font-weight:500;font-size:12px">${d.objective > 0 ? pct+'%' : '-'}</span></td>
+        <td><input class="rep-input rep-input-sm" type="number" value="${d.orders||''}" placeholder="0" onchange="REPORTING.updateClient('${month}','${c.id}','orders',this.value)"></td>
+        <td><input class="rep-input" type="number" value="${d.pipeline||''}" placeholder="0" onchange="REPORTING.updateClient('${month}','${c.id}','pipeline',this.value)"></td>
+        <td><input class="rep-input rep-input-lg" type="text" value="${d.comment||''}" placeholder="Commentaire..." onchange="REPORTING.updateClient('${month}','${c.id}','comment',this.value)"></td>
+        <td><button class="rep-del-btn" onclick="REPORTING.removeClient(${i})">✕</button></td>
+      </tr>`;
+    }).join('');
+  },
+
+  renderProjectsRows() {
+    return this.state.projects.map((p, i) => {
+      const statusColor = p.status === 'LIVE' ? 'var(--green)' : p.status === 'ONGOING' ? 'var(--blue)' : 'var(--yellow)';
+      const probaColor = p.probability >= 0.8 ? 'var(--green)' : p.probability >= 0.6 ? 'var(--yellow)' : 'var(--muted)';
+      return `<tr>
+        <td><strong>${p.partner}</strong></td>
+        <td>${p.name}</td>
+        <td><span class="rep-badge">${p.category}</span></td>
+        <td><input class="rep-input" type="number" value="${p.value}" onchange="REPORTING.updateProject(${i},'value',this.value)"></td>
+        <td><span style="color:${probaColor};font-weight:500">${Math.round(p.probability*100)}%</span></td>
+        <td style="color:var(--green)">${this.formatEur(p.value * p.probability)}</td>
+        <td><input class="rep-input rep-input-sm" type="text" value="${p.delivery}" onchange="REPORTING.updateProject(${i},'delivery',this.value)"></td>
+        <td style="color:var(--red);font-size:11px">${p.competitor||'-'}</td>
+        <td><span style="color:${statusColor};font-size:11px;font-weight:500">${p.status}</span></td>
+        <td><input class="rep-input rep-input-lg" type="text" value="${p.progress}" onchange="REPORTING.updateProject(${i},'progress',this.value)"></td>
+        <td><button class="rep-del-btn" onclick="REPORTING.removeProject(${i})">✕</button></td>
+      </tr>`;
+    }).join('');
+  },
+
+  // ── ACTIONS ──
+  changeMonth(m) {
+    this.state.currentMonth = m;
+    document.getElementById('tab-reporting').innerHTML = this.render();
+  },
+
+  showRepTab(tab, btn) {
+    document.querySelectorAll('.rep-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.rep-tab-content').forEach(t => t.style.display = 'none');
+    document.getElementById('reptab-' + tab).style.display = 'block';
+  },
+
+  updateClient(month, clientId, field, value) {
+    this.setClientData(month, clientId, { [field]: field === 'comment' ? value : Number(value) });
+    // Refresh totals only
+    const totals = this.getMonthTotals(month);
+    this.save();
+    // Refresh KPIs
+    this.refreshKPIs(totals);
+  },
+
+  refreshKPIs(totals) {
+    const kpis = document.querySelectorAll('.rep-kpi-value');
+    if (kpis[0]) kpis[0].textContent = this.formatEur(totals.totalSecured);
+    if (kpis[1]) kpis[1].textContent = this.formatEur(totals.totalObjective);
+    if (kpis[2]) kpis[2].textContent = totals.totalOrders;
+  },
+
+  updateProject(i, field, value) {
+    this.state.projects[i][field] = field === 'value' || field === 'probability' ? Number(value) : value;
+    this.save();
+  },
+
+  addClient() {
+    const name = prompt('Nom du client :');
+    if (!name) return;
+    const type = prompt('Type (Revendeur Pro / Distribution / Intégrateur / Opérateur) :') || 'Revendeur Pro';
+    const id = 'client_' + Date.now();
+    this.state.clients.push({ id, name, type, country: 'France' });
+    this.save();
+    this.changeMonth(this.state.currentMonth);
+  },
+
+  removeClient(i) {
+    if (!confirm('Supprimer ce client ?')) return;
+    this.state.clients.splice(i, 1);
+    this.save();
+    this.changeMonth(this.state.currentMonth);
+  },
+
+  addProject() {
+    const name = prompt('Nom du projet :');
+    if (!name) return;
+    const partner = prompt('Partenaire :') || '';
+    const value = Number(prompt('Valeur estimée (€) :') || 0);
+    this.state.projects.push({
+      id: 'proj_' + Date.now(), partner, name,
+      category: 'PRIVATE', scope: '', value, probability: 0.5,
+      delivery: 'Q4', competitor: '', status: 'ONGOING', progress: ''
+    });
+    this.save();
+    document.getElementById('reptab-projects').innerHTML = `<div class="rep-table-wrap"><table class="rep-table"><thead><tr><th>PARTENAIRE</th><th>PROJET</th><th>CATÉGORIE</th><th>VALEUR (€)</th><th>PROBA</th><th>PONDÉRÉ (€)</th><th>LIVRAISON</th><th>CONCURRENT</th><th>STATUT</th><th>PROGRESSION</th><th></th></tr></thead><tbody>${this.renderProjectsRows()}</tbody></table></div><button class="rep-add-btn" onclick="REPORTING.addProject()">＋ Ajouter projet</button>`;
+  },
+
+  removeProject(i) {
+    if (!confirm('Supprimer ce projet ?')) return;
+    this.state.projects.splice(i, 1);
+    this.save();
+    this.changeMonth(this.state.currentMonth);
+  },
+
+  // ── EXPORT EXCEL ──
+  async exportExcel() {
+    const month = this.state.currentMonth;
+    const monthLabel = new Date(month + '-01').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    const totals = this.getMonthTotals(month);
+
+    // Build CSV-based export (compatible with Excel)
+    const lines = [];
+
+    // Header
+    lines.push(`RAPPORT COMMERCIAL HYTERA FRANCE — LAMANA`);
+    lines.push(`Période : ${monthLabel.toUpperCase()}`);
+    lines.push(`Généré le : ${new Date().toLocaleDateString('fr-FR')}`);
+    lines.push('');
+
+    // Summary
+    lines.push('=== RÉSUMÉ MENSUEL ===');
+    lines.push(`CA Sécurisé,${totals.totalSecured}`);
+    lines.push(`Objectif,${totals.totalObjective}`);
+    lines.push(`GAP,${totals.totalObjective - totals.totalSecured}`);
+    lines.push(`Atteinte Objectif,${totals.totalObjective > 0 ? Math.round(totals.totalSecured/totals.totalObjective*100)+'%' : 'N/A'}`);
+    lines.push(`Total Commandes,${totals.totalOrders}`);
+    lines.push(`Pipeline Déclaré,${totals.totalPipeline}`);
+    lines.push(`Pipeline Pondéré Projets,${Math.round(this.getWeightedPipeline())}`);
+    lines.push('');
+
+    // Clients table
+    lines.push('=== DÉTAIL PAR CLIENT ===');
+    lines.push('CLIENT,TYPE,OBJECTIF (€),CA SÉCURISÉ (€),% OBJECTIF,COMMANDES,PIPELINE (€),COMMENTAIRE');
+    this.state.clients.forEach(c => {
+      const d = this.getClientData(month, c.id);
+      const pct = d.objective > 0 ? Math.round(d.secured/d.objective*100)+'%' : '-';
+      lines.push(`"${c.name}","${c.type}",${d.objective||0},${d.secured||0},${pct},${d.orders||0},${d.pipeline||0},"${d.comment||''}"`);
+    });
+    lines.push(`"TOTAL",,${totals.totalObjective},${totals.totalSecured},,${totals.totalOrders},${totals.totalPipeline},`);
+    lines.push('');
+
+    // Projects table
+    lines.push('=== PIPELINE PROJETS ===');
+    lines.push('PARTENAIRE,PROJET,CATÉGORIE,VALEUR (€),PROBABILITÉ,PONDÉRÉ (€),LIVRAISON,CONCURRENT,STATUT,PROGRESSION');
+    this.state.projects.forEach(p => {
+      lines.push(`"${p.partner}","${p.name}","${p.category}",${p.value},${Math.round(p.probability*100)}%,${Math.round(p.value*p.probability)},"${p.delivery}","${p.competitor||''}","${p.status}","${p.progress}"`);
+    });
+    lines.push('');
+
+    // Pipeline by status
+    lines.push('=== PIPELINE PAR STATUT ===');
+    ['ONGOING','LIVE','PENDING'].forEach(status => {
+      const projects = this.getPipelineByStatus(status);
+      const total = projects.reduce((s,p) => s + p.value, 0);
+      const weighted = projects.reduce((s,p) => s + p.value*p.probability, 0);
+      lines.push(`${status},${projects.length} projets,Valeur totale: ${this.formatEur(total)},Pondéré: ${this.formatEur(weighted)}`);
+    });
+
+    const csv = '\uFEFF' + lines.join('\r\n'); // BOM for Excel UTF-8
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Rapport_Hytera_Lamana_${month}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  // ── AI REPORT ──
+  async generateAIReport() {
+    const month = this.state.currentMonth;
+    const monthLabel = new Date(month + '-01').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    const totals = this.getMonthTotals(month);
+    const weighted = this.getWeightedPipeline();
+
+    const context = `
+Génère un rapport d'activité commercial mensuel professionnel pour Hytera France.
+
+DONNÉES ${monthLabel.toUpperCase()} :
+- CA Sécurisé : ${this.formatEur(totals.totalSecured)}
+- Objectif : ${this.formatEur(totals.totalObjective)}
+- Atteinte : ${totals.totalObjective > 0 ? Math.round(totals.totalSecured/totals.totalObjective*100)+'%' : 'N/A'}
+- Commandes : ${totals.totalOrders}
+- Pipeline pondéré projets : ${this.formatEur(weighted)}
+
+DÉTAIL CLIENTS :
+${this.state.clients.map(c => {
+  const d = this.getClientData(month, c.id);
+  if (!d.secured && !d.objective && !d.pipeline) return null;
+  return `- ${c.name} : Objectif ${this.formatEur(d.objective)}, Réalisé ${this.formatEur(d.secured)}, Pipeline ${this.formatEur(d.pipeline)}${d.comment ? ', Note: '+d.comment : ''}`;
+}).filter(Boolean).join('\n')}
+
+TOP PROJETS PIPELINE :
+${this.state.projects.filter(p => p.probability >= 0.7).map(p =>
+  `- ${p.name} (${p.partner}) : ${this.formatEur(p.value)}, ${Math.round(p.probability*100)}% proba, ${p.delivery}, Concurrent: ${p.competitor||'N/A'}, Statut: ${p.status}`
+).join('\n')}
+
+Format souhaité : Rapport structuré avec Introduction/Faits saillants/Analyse par client/Pipeline/Risques & Opportunités/Actions prioritaires. Professionnel, direct, orienté action.`;
+
+    // Send to chat
+    document.getElementById('userInput').value = context;
+    if (window.innerWidth <= 680) {
+      document.querySelectorAll('.stab')[0].click();
+    }
+    window.sendMessage();
+  },
+
+  // ── UTILS ──
+  formatEur(n) {
+    if (!n) return '—';
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
+  },
+
+  getMonthOptions() {
+    const months = [];
+    const now = new Date();
+    for (let i = -3; i <= 3; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      const value = d.toISOString().slice(0, 7);
+      const label = d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+      months.push({ value, label: label.charAt(0).toUpperCase() + label.slice(1) });
+    }
+    return months;
+  }
+};
+
+
+
+// ── PASTE & REPLY ──
+async function pasteAndReply() {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (!text || text.trim().length < 10) {
+      alert('Rien dans le presse-papier. Copiez votre email ou SMS en premier.');
+      return;
+    }
+    const type = detectContentType(text);
+    const input = document.getElementById('userInput');
+    input.value = type.prompt + text;
+    autoResize(input);
+    hideWelcome();
+    if (window.innerWidth <= 680) closeSidebar();
+    // Auto-send
+    sendMessage();
+  } catch(e) {
+    // Clipboard API not available — fallback: paste into input
+    const input = document.getElementById('userInput');
+    input.focus();
+    input.value = 'Prépare une réponse dans mon style à ce message :\n\n';
+    autoResize(input);
+    alert('Collez votre email/SMS dans le champ de texte (appui long → Coller), puis envoyez.');
+  }
+}
+
+function detectContentType(text) {
+  const t = text.toLowerCase();
+  // Email indicators
+  const emailSignals = ['objet:', 'subject:', 'de:', 'from:', 'à:', 'bonjour', 'cordialement', 'regards', '@', 'madame', 'monsieur'];
+  const smsSignals = text.length < 300 && !text.includes('
+
+
+');
+  const isEmail = emailSignals.filter(s => t.includes(s)).length >= 2 || text.length > 300;
+
+  if (isEmail) {
+    return { type: 'email', prompt: 'Prépare une réponse dans mon style exact à cet email. Deux versions : directe et prudente. Voici l'email :
+
+' };
+  } else {
+    return { type: 'sms', prompt: 'Prépare une réponse courte et naturelle dans mon style à ce message. Voici le message :
+
+' };
+  }
+}
+
+// Auto-detect paste in textarea
+document.addEventListener('DOMContentLoaded', () => {
+  const input = document.getElementById('userInput');
+  if (input) {
+    input.addEventListener('paste', (e) => {
+      setTimeout(() => {
+        const text = input.value.trim();
+        if (text.length > 80 && !document.getElementById('pasteDetectBar')) {
+          const type = detectContentType(text);
+          const bar = document.createElement('div');
+          bar.id = 'pasteDetectBar';
+          bar.style.cssText = 'position:absolute;bottom:100%;left:0;right:0;padding:8px 16px;background:rgba(124,106,219,.15);border:1px solid rgba(124,106,219,.3);border-radius:8px 8px 0 0;font-size:11px;font-family:DM Mono,monospace;color:var(--accent);display:flex;align-items:center;gap:8px;z-index:10;';
+          bar.innerHTML = `<span>${type.type === 'email' ? '📧 Email détecté' : '💬 Message détecté'}</span><button onclick="autoPrepareReply()" style="margin-left:auto;padding:3px 10px;background:rgba(200,184,255,.2);border:1px solid rgba(200,184,255,.3);border-radius:4px;color:var(--accent);font-family:DM Mono,monospace;font-size:10px;cursor:pointer;">Préparer réponse →</button><button onclick="document.getElementById('pasteDetectBar')?.remove()" style="padding:3px 8px;background:transparent;border:none;color:var(--muted);font-size:12px;cursor:pointer;">✕</button>`;
+          const inputArea = document.querySelector('.input-area');
+          if (inputArea) { inputArea.style.position = 'relative'; inputArea.appendChild(bar); }
+        }
+      }, 100);
+    });
+  }
+});
+
+function autoPrepareReply() {
+  document.getElementById('pasteDetectBar')?.remove();
+  const input = document.getElementById('userInput');
+  const text = input.value.trim();
+  const type = detectContentType(text);
+  input.value = type.prompt + text;
+  autoResize(input);
+  sendMessage();
+}
+
+init();
+</script>
+</body>
+</html>
