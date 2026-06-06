@@ -444,10 +444,12 @@ kbd { padding:1px 5px; background:var(--surface2); border:1px solid var(--border
       <button class="toolbar-btn" data-msg="Fais-moi un brief du jour" onclick="qs(this)">☀️ Brief</button>
       <button class="toolbar-btn" data-msg="Analyse ce document et extrais les points clés :" onclick="qs(this)">📄 Analyser</button>
     </div>
+    <input type="file" id="chatFileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv" style="display:none" onchange="attachFileToChat(event)">
     <div class="input-wrapper">
-      <textarea id="userInput" placeholder="Objectif, tâche, question, ou collez un document..." rows="1"
+      <textarea id="userInput" placeholder="Objectif, tache, question, ou collez un document..." rows="1"
         onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-      <button class="mic-btn" id="micBtn" onclick="toggleVoice()" title="Dictée vocale">🎤</button>
+      <button class="mic-btn" id="attachBtn" onclick="document.getElementById('chatFileInput').click()" title="Joindre fichier">📎</button>
+      <button class="mic-btn" id="micBtn" onclick="toggleVoice()" title="Dictee vocale">🎤</button>
       <button class="send-btn" id="sendBtn" onclick="sendMessage()">↑</button>
     </div>
     <div class="input-hint"><kbd>Enter</kbd> envoyer · <kbd>Shift+Enter</kbd> nouvelle ligne · 🎤 dictée vocale</div>
@@ -926,7 +928,13 @@ Tu AS une mémoire permanente synchronisée via Supabase. La section MÉMOIRE AC
 - Quand tu analyses un doc : commence par les 3 points les plus importants
 - Anticipe les prochaines étapes logiques
 - Ne commence JAMAIS par être d'accord
-- INTERDIT ABSOLU : "Bonne question", "Excellente question", "Absolument", "Certainement", "Bien sur", "Tu as raison"
+- INTERDIT ABSOLU — ces mots et toutes leurs variantes :
+  "Bonne question" / "Excellente question" / "Bonne reflexion" / "Bonne remarque" / "Tres bonne observation"
+  "Absolument" / "Certainement" / "Bien sur" / "Evidemment" / "Tout a fait"
+  "Tu as raison" / "Tu as tout a fait raison" / "C'est exact" (en debut de phrase)
+  "Je comprends" / "Je vois" (en ouverture)
+  Toute phrase qui commence par valider ou complimenter la question de l'utilisateur
+- Si tu t'appretes a ecrire l'un de ces mots, STOP et reformule directement
 
 ## STYLE DE RÉDACTION — COPIER EXACTEMENT
 Quand tu rédiges des emails ou textes POUR Abou-bakr, tu écris EXACTEMENT comme lui :
@@ -1139,6 +1147,40 @@ function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.sc
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('open'); }
 function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
 
+
+// ── ATTACH FILE TO CHAT ──
+async function attachFileToChat(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const attachBtn = document.getElementById('attachBtn');
+  attachBtn.textContent = '⏳';
+  
+  try {
+    const content = await readFile(file);
+    const truncated = content.slice(0, 12000);
+    const input = document.getElementById('userInput');
+    const existing = input.value.trim();
+    const prompt = existing 
+      ? existing + '\n\n--- FICHIER: ' + file.name + ' ---\n' + truncated
+      : 'Analyse ce fichier et donne-moi les points cles :\n\n--- FICHIER: ' + file.name + ' ---\n' + truncated;
+    input.value = prompt;
+    autoResize(input);
+    
+    // Show attached file indicator
+    const bar = document.getElementById('docContextBar');
+    document.getElementById('docContextText').textContent = '📎 ' + file.name + ' joint au message';
+    bar.classList.add('active');
+    
+    attachBtn.textContent = '📎';
+    input.focus();
+  } catch(e) {
+    attachBtn.textContent = '📎';
+    alert('Impossible de lire ce fichier. Essayez de copier-coller le contenu.');
+  }
+  event.target.value = '';
+}
+
 // ── INIT ──
 async function init() {
   // First try localStorage
@@ -1201,7 +1243,41 @@ const REPORTING = {
     currentMonth: new Date().toISOString().slice(0, 7)
   },
 
-  // ── INIT ──
+  
+// ── ATTACH FILE TO CHAT ──
+async function attachFileToChat(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const attachBtn = document.getElementById('attachBtn');
+  attachBtn.textContent = '⏳';
+  
+  try {
+    const content = await readFile(file);
+    const truncated = content.slice(0, 12000);
+    const input = document.getElementById('userInput');
+    const existing = input.value.trim();
+    const prompt = existing 
+      ? existing + '\n\n--- FICHIER: ' + file.name + ' ---\n' + truncated
+      : 'Analyse ce fichier et donne-moi les points cles :\n\n--- FICHIER: ' + file.name + ' ---\n' + truncated;
+    input.value = prompt;
+    autoResize(input);
+    
+    // Show attached file indicator
+    const bar = document.getElementById('docContextBar');
+    document.getElementById('docContextText').textContent = '📎 ' + file.name + ' joint au message';
+    bar.classList.add('active');
+    
+    attachBtn.textContent = '📎';
+    input.focus();
+  } catch(e) {
+    attachBtn.textContent = '📎';
+    alert('Impossible de lire ce fichier. Essayez de copier-coller le contenu.');
+  }
+  event.target.value = '';
+}
+
+// ── INIT ──
   async init(supaFetch, userId) {
     this.supaFetch = supaFetch;
     this.userId = userId;
