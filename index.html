@@ -331,6 +331,55 @@ kbd { padding:1px 5px; background:var(--surface2); border:1px solid var(--border
 .rep-add-btn { margin:8px 0; padding:7px 12px; background:transparent; border:1px dashed var(--border2); border-radius:6px; color:var(--muted); font-size:11px; font-family:"Geist",sans-serif; cursor:pointer; transition:all .15s; width:100%; }
 .rep-add-btn:hover { border-color:var(--accent2); color:var(--accent); }
 
+
+/* ── BOTTOM NAV (mobile/iPad ≤1024px) ── */
+.bottom-nav {
+  display:none;
+  position:fixed; bottom:0; left:0; right:0; z-index:200;
+  background:var(--surface); border-top:1px solid var(--border);
+  padding-bottom:env(safe-area-inset-bottom);
+  flex-direction:row; align-items:stretch;
+}
+.bn-item {
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:8px 4px 6px; gap:3px; cursor:pointer; border:none; background:transparent;
+  color:var(--muted); font-family:'DM Mono',monospace; font-size:9px; letter-spacing:.05em;
+  transition:color .15s; -webkit-tap-highlight-color:transparent; min-height:52px;
+}
+.bn-item:active { opacity:.7; }
+.bn-item.active { color:var(--accent); }
+.bn-item .bn-icon { font-size:20px; line-height:1; }
+.bn-item.active .bn-icon { filter:drop-shadow(0 0 6px var(--accent2)); }
+
+/* FULL-SCREEN PANELS (mobile/iPad) */
+.panel-overlay {
+  display:none; position:fixed; inset:0; z-index:150;
+  background:var(--bg); flex-direction:column;
+  padding-top:env(safe-area-inset-top);
+  padding-bottom:calc(env(safe-area-inset-bottom) + 52px);
+}
+.panel-overlay.open { display:flex; }
+.panel-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 16px; background:var(--surface); border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.panel-title { font-family:'Instrument Serif',serif; font-size:18px; color:var(--text); font-style:italic; }
+.panel-close { background:none; border:none; color:var(--muted); font-size:22px; cursor:pointer; padding:4px; }
+.panel-body { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; }
+
+@media (max-width:1024px) {
+  .bottom-nav { display:flex; }
+  /* Hide old sidebar and mobile header on small screens when nav is active */
+  .sidebar { display:none !important; }
+  .mobile-header { display:none !important; }
+  .sidebar-overlay { display:none !important; }
+  /* Add bottom padding to main chat area */
+  .main { padding-bottom:52px; }
+  /* Chat takes full width */
+  .app-shell { flex-direction:column; }
+}
+
 </style>
 </head>
 <body>
