@@ -119,6 +119,7 @@ body {
 .history-title { font-size:12px; color:var(--text); font-weight:400; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .history-date { font-size:10px; color:var(--muted); font-family:'DM Mono',monospace; margin-top:2px; }
 .history-clear { margin:6px 12px; padding:7px 10px; background:transparent; border:1px solid var(--border); border-radius:6px; color:var(--muted); font-size:11px; font-family:'DM Mono',monospace; cursor:pointer; width:calc(100% - 24px); transition:all .15s; }
+.history-summary { font-size:10px; color:var(--muted); font-family:'Geist',sans-serif; font-weight:300; margin-top:3px; line-height:1.4; font-style:italic; white-space:normal; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
 .history-clear:hover { border-color:var(--red); color:var(--red); }
 
 /* SIDEBAR FOOTER */
@@ -259,7 +260,23 @@ kbd { padding:1px 5px; background:var(--surface2); border:1px solid var(--border
 .sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:99; backdrop-filter:blur(2px); }
 .sidebar-overlay.open { display:block; }
 
-/* RESPONSIVE */
+/* RESPONSIVE — IPAD (768–1024px) */
+@media (min-width:681px) and (max-width:1024px) {
+  .sidebar { width:240px; min-width:240px; }
+  .quick-actions { grid-template-columns:1fr 1fr; gap:8px; }
+  .welcome-title { font-size:30px; }
+  .chat-area { padding:20px 16px; }
+  .msg.user { max-width:80%; }
+  .pipeline-bar { padding:8px 14px; }
+  .pipe-node { font-size:9px; padding:3px 8px; }
+  /* Toolbar wraps nicely on iPad */
+  .input-toolbar { flex-wrap:wrap; gap:4px; }
+  /* Touch targets comfortable on iPad */
+  .toolbar-btn { padding:6px 12px; font-size:11px; }
+  .send-btn, .mic-btn { width:40px; height:40px; }
+}
+
+/* RESPONSIVE — MOBILE (≤680px) */
 @media (max-width:680px) {
   .mobile-header { display:flex; }
   .sidebar { position:fixed; top:0; left:0; bottom:0; transform:translateX(-100%); padding-top:var(--safe-top); }
@@ -746,10 +763,19 @@ async function saveConversation() {
   const firstUserMsg = state.history.find(m => m.role==='user')?.content || 'Conversation';
   const title = firstUserMsg.slice(0,50) + (firstUserMsg.length > 50 ? '...' : '');
   const date = new Date().toLocaleDateString('fr-FR');
+
+  // Generate summary asynchronously (non-blocking)
+  let summary = '';
+  try { summary = await generateSessionSummary(state.history) || ''; } catch {}
+
   try {
+    // Store summary in tag_class alongside the date, separated by |
     await supaFetch('/aiden_memory','POST',{
-      user_id:state.userId, icon:title, text:JSON.stringify(state.history.slice(-20)),
-      tag:'CONV', tag_class:date
+      user_id:state.userId,
+      icon:title,
+      text:JSON.stringify(state.history.slice(-20)),
+      tag:'CONV',
+      tag_class: summary ? `${date}|${summary}` : date
     });
     await loadConversationsFromSupabase();
   } catch(e) {}
@@ -765,7 +791,12 @@ function renderHistory() {
   state.conversations.forEach(conv => {
     const div = document.createElement('div');
     div.className = 'history-item';
-    div.innerHTML = `<div class="history-title">${escapeHTML(conv.title)}</div><div class="history-date">${conv.date}</div>`;
+    // date may be "DD/MM/YYYY|summary text"
+    const [dateStr, summary] = (conv.date || '').split('|');
+    const summaryHTML = summary
+      ? `<div class="history-summary">${escapeHTML(summary)}</div>`
+      : '';
+    div.innerHTML = `<div class="history-title">${escapeHTML(conv.title)}</div><div class="history-date">${dateStr}</div>${summaryHTML}`;
     div.onclick = () => loadConversation(conv);
     list.appendChild(div);
   });
@@ -1020,8 +1051,8 @@ async function sendMessage() {
     removeThinking(thinking);
     completePipeline();
 
-    // Auto-save conversation every 4 exchanges
-    if (state.history.length % 8 === 0) saveConversation();
+    // Auto-save conversation every 5 exchanges (10 messages = 5 user + 5 assistant)
+    if (state.history.length % 10 === 0) saveConversation();
 
     try {
       const match = raw.match(/\{[\s\S]*\}/);
@@ -1182,24 +1213,131 @@ async function attachFileToChat(event) {
 }
 
 // ── INIT ──
+// ── SAVE ON EXIT ──
+window.addEventListener('beforeunload', () => {
+  if (state.history.length >= 2) saveConversation();
+});
+
+// ── BRIEF DU JOUR AUTO ──
+async function autoBriefDuJour() {
+  // Only trigger on first visit of the day
+  const today = new Date().toDateString();
+  const lastBrief = localStorage.getItem('aiden_last_brief');
+  if (lastBrief === today || !state.apiKey) return;
+  localStorage.setItem('aiden_last_brief', today);
+
+  const day = new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
+  const memCtx = state.memory.slice(0,8).map(m => `- ${m.text}`).join('\n');
+
+  // Build a brief context from pipeline data
+  const topProjects = (REPORTING.state.projects || [])
+    .filter(p => p.probability >= 0.7)
+    .slice(0,3)
+    .map(p => `- ${p.name} (${p.partner}) : ${p.value.toLocaleString('fr-FR')}€, ${Math.round(p.probability*100)}%`)
+    .join('\n') || '(aucun projet critique identifié)';
+
+  const prompt = `Nous sommes le ${day}. Génère le brief du jour en 5 points max. Format : chaque point sur une ligne, direct, actionnable. Inclus :
+1. Focus prioritaire du jour
+2. Point de vigilance pipeline
+3. Action commerciale recommandée
+4. Rappel clé de mémoire pertinent
+5. Objectif de fin de journée
+
+CONTEXTE MÉMOIRE :
+${memCtx}
+
+TOP PROJETS PIPELINE (≥70%) :
+${topProjects}
+
+Sois court, direct, sans fioritures.`;
+
+  // Show auto-brief message
+  hideWelcome();
+  appendMessage('assistant', `☀️ **Brief du jour — ${day}**\n\n_Génération en cours..._`);
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':state.apiKey,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:600,
+        system: buildSystemPrompt(),
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const brief = data.content[0].text;
+    // Replace the "generating..." message
+    const area = document.getElementById('chatArea');
+    const last = area.querySelector('.msg.assistant:last-child .msg-bubble');
+    if (last) last.innerHTML = escapeAndFormat(`☀️ **Brief du jour — ${day}**\n\n${brief}`);
+  } catch(e) {
+    console.warn('Brief auto failed:', e);
+    const area = document.getElementById('chatArea');
+    const last = area.querySelector('.msg.assistant:last-child .msg-bubble');
+    if (last) last.innerHTML = escapeAndFormat(`☀️ Brief du jour indisponible. Cliquez sur "Brief du jour" pour le générer.`);
+  }
+}
+
+// ── SESSION SUMMARY ──
+async function generateSessionSummary(messages) {
+  if (!state.apiKey || messages.length < 4) return null;
+  const transcript = messages
+    .slice(-20)
+    .map(m => `${m.role === 'user' ? 'Vous' : 'AIDEN'}: ${m.content.slice(0,200)}`)
+    .join('\n');
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':state.apiKey,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:150,
+        messages:[{role:'user',content:`Résume cette session en 2 phrases max, style télégraphique, en français. Sujets traités et décisions/actions clés uniquement.\n\nSession:\n${transcript}`}]
+      })
+    });
+    const data = await res.json();
+    return data.content?.[0]?.text || null;
+  } catch { return null; }
+}
+
+// ── INIT ──
 async function init() {
-  // First try localStorage
-  if (state.apiKey) {
-    document.getElementById('setupModal').classList.remove('open');
-  }
-  // Init Supabase
+  // Init Supabase first — key may live there (multi-device sync)
   await initSupabase();
-  // Try to get API key from Supabase if not in localStorage
-  if (!state.apiKey && state.supabaseReady) {
-    await loadApiKeyFromSupabase();
+
+  // Prefer Supabase API key (multi-device) over localStorage
+  if (state.supabaseReady) {
+    const remoteKey = await loadApiKeyFromSupabase();
+    if (remoteKey) {
+      state.apiKey = remoteKey;
+      localStorage.setItem('aiden_api_key', remoteKey);
+    }
   }
-  // Only show modal if still no key
+
+  // Show/hide modal
   if (!state.apiKey) {
     document.getElementById('setupModal').classList.add('open');
   } else {
     document.getElementById('setupModal').classList.remove('open');
   }
+
   await REPORTING.init(supaFetch, state.userId);
+
+  // Auto brief du jour after UI settles
+  setTimeout(() => autoBriefDuJour(), 800);
 }
 
 // ── REPORTING JS ──
@@ -1243,39 +1381,7 @@ const REPORTING = {
     currentMonth: new Date().toISOString().slice(0, 7)
   },
 
-  
-// ── ATTACH FILE TO CHAT ──
-async function attachFileToChat(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  
-  const attachBtn = document.getElementById('attachBtn');
-  attachBtn.textContent = '⏳';
-  
-  try {
-    const content = await readFile(file);
-    const truncated = content.slice(0, 12000);
-    const input = document.getElementById('userInput');
-    const existing = input.value.trim();
-    const prompt = existing 
-      ? existing + '\n\n--- FICHIER: ' + file.name + ' ---\n' + truncated
-      : 'Analyse ce fichier et donne-moi les points cles :\n\n--- FICHIER: ' + file.name + ' ---\n' + truncated;
-    input.value = prompt;
-    autoResize(input);
-    
-    // Show attached file indicator
-    const bar = document.getElementById('docContextBar');
-    document.getElementById('docContextText').textContent = '📎 ' + file.name + ' joint au message';
-    bar.classList.add('active');
-    
-    attachBtn.textContent = '📎';
-    input.focus();
-  } catch(e) {
-    attachBtn.textContent = '📎';
-    alert('Impossible de lire ce fichier. Essayez de copier-coller le contenu.');
-  }
-  event.target.value = '';
-}
+
 
 // ── INIT ──
   async init(supaFetch, userId) {
