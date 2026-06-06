@@ -1648,19 +1648,12 @@ async function pasteAndReply() {
 
 function detectContentType(text) {
   const t = text.toLowerCase();
-  // Email indicators
-  const emailSignals = ['objet:', 'subject:', 'de:', 'from:', 'à:', 'bonjour', 'cordialement', 'regards', '@', 'madame', 'monsieur'];
-  const smsSignals = text.length < 300 && (text.match(/\n/g)||[]).length < 5;
+  const emailSignals = ['objet:', 'subject:', 'de:', 'from:', 'bonjour', 'cordialement', 'regards', '@', 'madame', 'monsieur'];
   const isEmail = emailSignals.filter(s => t.includes(s)).length >= 2 || text.length > 300;
-
   if (isEmail) {
-    return { type: 'email', prompt: 'Prépare une réponse dans mon style exact à cet email. Deux versions : directe et prudente. Voici l'email :
-
-' };
+    return { type: "email", prompt: "Prepare une reponse dans mon style a cet email - deux versions directe et prudente:\n\n" };
   } else {
-    return { type: 'sms', prompt: 'Prépare une réponse courte et naturelle dans mon style à ce message. Voici le message :
-
-' };
+    return { type: "sms", prompt: "Prepare une reponse courte dans mon style a ce message:\n\n" };
   }
 }
 
