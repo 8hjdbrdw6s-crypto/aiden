@@ -1102,10 +1102,10 @@ async function acceptMemory(elId, memStr) {
 // ── SETUP ──
 function saveConfig() {
   const key = document.getElementById('apiKeyInput').value.trim();
-  if (!key.startsWith('sk-')) { alert('Clé invalide (doit commencer par sk-)'); return; }
+  if (!key.startsWith('sk-')) { alert('Cle invalide (doit commencer par sk-)'); return; }
   state.apiKey = key;
   localStorage.setItem('aiden_api_key', key);
-  if (state.supabaseReady) saveApiKeyToSupabase(key);
+  saveApiKeyToSupabase(key); // Always save to Supabase
   document.getElementById('setupModal').classList.remove('open');
 }
 
@@ -1137,9 +1137,22 @@ function closeSidebar() { document.getElementById('sidebar').classList.remove('o
 
 // ── INIT ──
 async function init() {
+  // First try localStorage
+  if (state.apiKey) {
+    document.getElementById('setupModal').classList.remove('open');
+  }
+  // Init Supabase
   await initSupabase();
-  if (!state.apiKey && state.supabaseReady) await loadApiKeyFromSupabase();
-  if (!state.apiKey) document.getElementById('setupModal').classList.add('open');
+  // Try to get API key from Supabase if not in localStorage
+  if (!state.apiKey && state.supabaseReady) {
+    await loadApiKeyFromSupabase();
+  }
+  // Only show modal if still no key
+  if (!state.apiKey) {
+    document.getElementById('setupModal').classList.add('open');
+  } else {
+    document.getElementById('setupModal').classList.remove('open');
+  }
   await REPORTING.init(supaFetch, state.userId);
 }
 
