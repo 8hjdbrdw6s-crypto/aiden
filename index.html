@@ -373,7 +373,7 @@ kbd { padding:1px 5px; background:var(--surface2); border:1px solid var(--border
   <!-- HISTORY TAB -->
   <div class="tab-content" id="tab-history">
     <div class="history-list" id="historyList"></div>
-    <button class="history-clear" onclick="clearHistory()">🗑 Effacer l'historique</button>
+    <button class="history-clear" onclick="clearHistory()">🗑 Effacer l’historique</button>
   </div>
 
   <!-- REPORTING TAB -->
@@ -412,24 +412,24 @@ kbd { padding:1px 5px; background:var(--surface2); border:1px solid var(--border
   <div class="chat-area" id="chatArea">
     <div class="welcome" id="welcomeScreen">
       <div class="welcome-title">Bonjour.</div>
-      <div class="welcome-sub">Que souhaitez-vous accomplir aujourd'hui ?</div>
+      <div class="welcome-sub">Que souhaitez-vous accomplir aujourd’hui ?</div>
       <div class="quick-actions">
-        <button class="quick-btn" onclick="quickSend('Planifie ma semaine et priorise mes tâches')">
+        <button class="quick-btn" data-msg="Planifie ma semaine et priorise mes tâches" onclick="qs(this)">
           <div class="quick-btn-icon">📅</div><div class="quick-btn-text">Planifier ma semaine</div><div class="quick-btn-sub">Priorisation & org.</div>
         </button>
-        <button class="quick-btn" onclick="quickSend('Fais-moi un brief du jour : priorités, objectifs, points de vigilance')">
+        <button class="quick-btn" data-msg="Fais-moi un brief du jour : priorités, objectifs, points de vigilance" onclick="qs(this)">
           <div class="quick-btn-icon">☀️</div><div class="quick-btn-text">Brief du jour</div><div class="quick-btn-sub">Priorités & objectifs</div>
         </button>
-        <button class="quick-btn" onclick="quickSend('Aide-moi à rédiger un email commercial percutant')">
+        <button class="quick-btn" data-msg="Aide-moi à rédiger un email commercial percutant" onclick="qs(this)">
           <div class="quick-btn-icon">✉️</div><div class="quick-btn-text">Email commercial</div><div class="quick-btn-sub">Pro & direct</div>
         </button>
-        <button class="quick-btn" onclick="quickSend('Prépare-moi une présentation commerciale structurée slide par slide')">
+        <button class="quick-btn" data-msg="Prépare-moi une présentation commerciale structurée slide par slide" onclick="qs(this)">
           <div class="quick-btn-icon">📊</div><div class="quick-btn-text">Créer présentation</div><div class="quick-btn-sub">Slides structurées</div>
         </button>
-        <button class="quick-btn" onclick="quickSend('Traduis ce document en anglais en gardant le format professionnel')">
+        <button class="quick-btn" data-msg="Traduis ce document en anglais en gardant le format professionnel" onclick="qs(this)">
           <div class="quick-btn-icon">🌍</div><div class="quick-btn-text">Traduction</div><div class="quick-btn-sub">FR / EN / autres</div>
         </button>
-        <button class="quick-btn" onclick="quickSend('Analyse ce document et donne-moi les points clés')">
+        <button class="quick-btn" data-msg="Analyse ce document et donne-moi les points clés" onclick="qs(this)">
           <div class="quick-btn-icon">📄</div><div class="quick-btn-text">Analyser document</div><div class="quick-btn-sub">Résumé & insights</div>
         </button>
       </div>
@@ -438,11 +438,11 @@ kbd { padding:1px 5px; background:var(--surface2); border:1px solid var(--border
 
   <div class="input-area">
     <div class="input-toolbar">
-      <button class="toolbar-btn" onclick="quickSend('Rédige un email de suivi client professionnel')">✉️ Email</button>
-      <button class="toolbar-btn" onclick="quickSend('Crée une présentation commerciale slide par slide')">📊 Présentation</button>
-      <button class="toolbar-btn" onclick="quickSend('Traduis en anglais :')">🌍 Traduire</button>
-      <button class="toolbar-btn" onclick="quickSend('Fais-moi un brief du jour')">☀️ Brief</button>
-      <button class="toolbar-btn" onclick="quickSend('Analyse ce document et extrais les points clés :')">📄 Analyser</button>
+      <button class="toolbar-btn" data-msg="Rédige un email de suivi client professionnel" onclick="qs(this)">✉️ Email</button>
+      <button class="toolbar-btn" data-msg="Crée une présentation commerciale slide par slide" onclick="qs(this)">📊 Présentation</button>
+      <button class="toolbar-btn" data-msg="Traduis en anglais :" onclick="qs(this)">🌍 Traduire</button>
+      <button class="toolbar-btn" data-msg="Fais-moi un brief du jour" onclick="qs(this)">☀️ Brief</button>
+      <button class="toolbar-btn" data-msg="Analyse ce document et extrais les points clés :" onclick="qs(this)">📄 Analyser</button>
     </div>
     <div class="input-wrapper">
       <textarea id="userInput" placeholder="Objectif, tâche, question, ou collez un document..." rows="1"
@@ -459,7 +459,7 @@ kbd { padding:1px 5px; background:var(--surface2); border:1px solid var(--border
 <div class="modal-overlay" id="setupModal">
   <div class="setup-card">
     <div class="setup-title">Configurer AIDEN</div>
-    <div class="setup-sub">Entrez votre clé API Anthropic pour activer l'assistant. Elle sera mémorisée.</div>
+    <div class="setup-sub">Entrez votre clé API Anthropic pour activer l’assistant. Elle sera mémorisée.</div>
     <div class="setup-field">
       <label class="setup-label">CLÉ API ANTHROPIC</label>
       <input type="password" class="setup-input" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off"/>
@@ -602,7 +602,7 @@ function renderMemory() {
   });
 }
 async function promptAddMemory() {
-  const text = prompt('Que souhaitez-vous mémoriser ?');
+  const text = prompt('Que souhaitez-vous memoriser ?');
   if (!text) return;
   const mem = {icon:'📌',text,tag:'MANUEL',tagClass:'tag-pref'};
   if (state.supabaseReady) await saveMemoryToSupabase(mem);
@@ -1127,6 +1127,8 @@ function escapeAndFormat(text) {
   t = t.replace(/\[Hypothèse\]/g,'<span class="confidence-badge conf-hypothesis">HYPOTHÈSE</span>');
   return t;
 }
+
+function qs(el){quickSend(el.getAttribute('data-msg'));}
 function quickSend(text) { document.getElementById('userInput').value = text; sendMessage(); }
 function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} }
 function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px'; }
